@@ -1,0 +1,14 @@
+{
+  "name": "chat-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "build": "pnpm run --recursive build",
+    "start:backend": "pnpm --filter backend dev",
+    "start:frontend": "pnpm --filter frontend dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
