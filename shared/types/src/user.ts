@@ -1,11 +1,17 @@
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: Date;
+export interface ReqUser{
+  id: number,
+  email: string,
 }
 
-export interface CreateUserRequest {
+export interface User {
+  id: number;
   name: string;
   email: string;
+  password: string | null;
+  loginType: 'local' | 'google';
+  imageUrl: string | null;
+  lastSeen: Date;
+  isOnline: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

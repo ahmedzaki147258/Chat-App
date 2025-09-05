@@ -1,36 +1,45 @@
 import bcrypt from "bcryptjs";
-import { sequelize } from "../index";
-import { DataTypes, Model, Optional } from 'sequelize';
-export interface UserAttributes {
-  id: number;
-  name: string;
-  email: string;
-  password: string | null;
-  loginType: 'local' | 'google';
-  imageUrl: string | null;
-  lastSeen?: Date;
-  isOnline: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+import { sequelize } from "../../config/database";
+import { DataTypes, Model, CreationOptional, InferAttributes, InferCreationAttributes } from 'sequelize';
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'password' | 'imageUrl' | 'lastSeen' | 'isOnline' | 'createdAt' | 'updatedAt'> {}
+export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
+  declare id: CreationOptional<number>;
+  declare name: string;
+  declare email: string;
+  declare password: CreationOptional<string | null>;
+  declare loginType: 'local' | 'google';
+  declare imageUrl: CreationOptional<string | null>;
+  declare lastSeen: CreationOptional<Date>;
+  declare isOnline: CreationOptional<boolean>;
+  declare refreshToken: CreationOptional<string | null>;
 
-export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
-  public id!: number;
-  public name!: string;
-  public email!: string;
-  public password!: string | null;
-  public loginType!: 'local' | 'google';
-  public imageUrl!: string | null;
-  public lastSeen!: Date;
-  public isOnline!: boolean;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
-
-  validPassword(password: string): boolean {
+  async validatePassword(password: string): Promise<boolean> {
     if (!this.password) return false;
-    return bcrypt.compareSync(password, this.password);
+    return await bcrypt.compare(password, this.password);
+  }
+
+  async updateConnectionStatus(isOnline: boolean): Promise<void> {
+    this.isOnline = isOnline;
+    if (!isOnline) {
+      this.lastSeen = new Date();
+    }
+    await this.save();
+  }
+
+  static async safeCreate(userData: InferCreationAttributes<User>): Promise<User> {
+    try {
+      return await this.create(userData);
+    } catch (error: any) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        throw new Error('Email already exists');
+      }
+      throw error;
+    }
+  }
+
+  toJSON() {
+    const { id, name, email, loginType, imageUrl, lastSeen, isOnline } = this.get();
+    return { id, name, email, loginType, imageUrl, lastSeen, isOnline };
   }
 }
 
@@ -42,26 +51,51 @@ User.init(
       primaryKey: true
     },
     name: {
-      type: new DataTypes.STRING(255),
-      allowNull: false
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Name is required' },
+        len: { 
+          args: [2, 255],
+          msg: 'Name must be between 2 and 255 characters'
+        }
+      }
     },
     email: {
-      type: new DataTypes.STRING(255),
-      unique: true,   
-      allowNull: false
+      type: DataTypes.STRING(255),
+      unique: {
+        name: 'users_email_unique',
+        msg: 'Email already exists'
+      },
+      allowNull: false,
+      validate: {
+        isEmail: { msg: 'Invalid email format' },
+        notEmpty: { msg: 'Email is required' }
+      }
     },
     password: {
-      type: new DataTypes.STRING(255),
-      allowNull: true
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        len: [0, 255],
+        localPasswordRequired(this: User) {
+          if (this.loginType === 'local' && (!this.password || this.password.trim() === '')) {
+            throw new Error('Password is required for local users');
+          }
+        }
+      }
     },
     loginType: {
-      type: new DataTypes.ENUM('local', 'google'),
+      type: DataTypes.ENUM('local', 'google'),
       allowNull: false,
       defaultValue: 'local'
     },
     imageUrl: {
-      type: new DataTypes.STRING(500),
-      allowNull: true
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      validate: {
+        isUrl: { msg: 'Invalid URL format' }
+      }
     },
     lastSeen: {
       type: DataTypes.DATE,
@@ -72,23 +106,67 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    },
+    refreshToken: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     }
   },
   {
     sequelize,
     tableName: "users",
     timestamps: true,
+    defaultScope: {
+      attributes: { 
+        exclude: ['password', 'refreshToken', 'createdAt', 'updatedAt'] 
+      }
+    },
     hooks: {
-      beforeCreate: (user) => {
+      beforeValidate: (user: User) => {
+        if (user.email) {
+          user.email = user.email.toLowerCase().trim();
+        }
         if (user.password) {
-          user.password = bcrypt.hashSync(user.password, bcrypt.genSaltSync(10));
+          user.password = user.password.trim();
         }
       },
-      beforeUpdate: (user) => {
-        if (user.password && user.changed('password')) {
-          user.password = bcrypt.hashSync(user.password, bcrypt.genSaltSync(10));
+      beforeSave: async (user: User) => {
+        if (user.changed('loginType') && user.loginType === 'local') {
+          if (!user.password) {
+            throw new Error('Password is required when switching to local login');
+          }
+
+          // Hash password if user switches to local
+          user.password = await bcrypt.hash(user.password, 12);
+        } else if (user.password && user.changed('password') && user.loginType === 'local') {
+          // Hash password if changed and loginType is local
+          user.password = await bcrypt.hash(user.password, 12);
+        }
+        
+        // Remove password if loginType is google
+        if (user.loginType === 'google' && user.password) {
+          user.password = null;
         }
       }
-    }
+    },
+    indexes: [
+      {
+        unique: true,
+        fields: ['email']
+      },
+      {
+        fields: ['isOnline']
+      },
+      {
+        fields: ['loginType']
+      }
+    ]
   }
 );
+
+// add scopes
+User.addScope('active', { where: { isOnline: true } });
+User.addScope('localUsers', { where: { loginType: 'local' } });
+User.addScope('googleUsers', { where: { loginType: 'google' } });
+
+export default User;
