@@ -17,7 +17,13 @@ export const authenticateRefreshToken = async (req: Request, res: Response, next
       return res.status(httpStatus.FORBIDDEN).json({ message: "Invalid refresh token" });
     }
 
-    req.user = { id: user.id, email: user.email };
+    if ((decoded as any).exp) {
+      const exp = (decoded as any).exp;
+      const now = Math.floor(Date.now() / 1000);
+      const secondsLeft = exp - now;
+      console.log(`Refresh token will expire in ${secondsLeft} seconds`);
+    }
+    req.user = decoded;
     next();
   } catch (error: unknown) {
     if (error instanceof jwt.TokenExpiredError) {

@@ -15,6 +15,12 @@ export const authenticateAccessToken = async (req: Request, res: Response, next:
       return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid token" });
     }
 
+    if ((decoded as any).exp) {
+      const exp = (decoded as any).exp;
+      const now = Math.floor(Date.now() / 1000);
+      const secondsLeft = exp - now;
+      console.log(`Access token will expire in ${secondsLeft} seconds`);
+    }
     req.user = decoded;
     next();
   } catch (error: unknown) {
