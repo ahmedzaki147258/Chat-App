@@ -1,0 +1,11 @@
+meta {
+  name: get current user
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{SERVER_URL}}/api/auth/logout
+  body: none
+  auth: none
+}

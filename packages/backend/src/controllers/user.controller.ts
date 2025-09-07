@@ -61,7 +61,7 @@ export const getConversationsWithLastMessage = async (req: Request, res: Respons
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
     }
   }
-}
+};
 
 export const updateUserImage = async (req: Request, res: Response) => {
   const id: number = req.user?.id!;
@@ -80,4 +80,4 @@ export const updateUserImage = async (req: Request, res: Response) => {
       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
     }
   }
-}
+};

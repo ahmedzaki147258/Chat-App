@@ -77,9 +77,10 @@ export const refreshToken = async (req: Request, res: Response) => {
   }
 };
 
-export const getCurrentUser = (req: Request, res: Response) => {
+export const getCurrentUser = async (req: Request, res: Response) => {
   if (req.user) {
-    res.status(httpStatus.OK).json({ user: req.user });
+    const user = await User.findByPk(req.user.id);
+    res.status(httpStatus.OK).json({ user });
   } else {
     res.status(httpStatus.UNAUTHORIZED).json({ user: null });
   }
