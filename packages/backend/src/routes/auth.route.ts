@@ -9,7 +9,7 @@ router.post("/login", loginUser);
 router.post("/register", registerUser);
 router.post("/refresh-token", authenticateRefreshToken, refreshToken);
 router.get("/me", authenticateAccessToken, getCurrentUser);
-router.get("/logout", authenticateAccessToken, logoutUser);
+router.post("/logout", authenticateAccessToken, logoutUser);
 
 // Initiate Google OAuth
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
