@@ -7,7 +7,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare name: string;
   declare email: string;
   declare password: CreationOptional<string | null>;
-  declare loginType: 'local' | 'google';
+  declare authProvider: 'local' | 'google';
+  declare googleId: CreationOptional<string | null>;
   declare imageUrl: CreationOptional<string | null>;
   declare lastSeen: CreationOptional<Date>;
   declare isOnline: CreationOptional<boolean>;
@@ -38,8 +39,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   }
 
   toJSON() {
-    const { id, name, email, loginType, imageUrl, lastSeen, isOnline } = this.get();
-    return { id, name, email, loginType, imageUrl, lastSeen, isOnline };
+    const { id, name, email, authProvider, imageUrl, lastSeen, isOnline } = this.get();
+    return { id, name, email, authProvider, imageUrl, lastSeen, isOnline };
   }
 }
 
@@ -79,16 +80,21 @@ User.init(
       validate: {
         len: [0, 255],
         localPasswordRequired(this: User) {
-          if (this.loginType === 'local' && (!this.password || this.password.trim() === '')) {
+          if (this.authProvider === 'local' && (!this.password || this.password.trim() === '')) {
             throw new Error('Password is required for local users');
           }
         }
       }
     },
-    loginType: {
+    authProvider: {
       type: DataTypes.ENUM('local', 'google'),
       allowNull: false,
       defaultValue: 'local'
+    },
+    googleId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true
     },
     imageUrl: {
       type: DataTypes.STRING(500),
@@ -131,20 +137,20 @@ User.init(
         }
       },
       beforeSave: async (user: User) => {
-        if (user.changed('loginType') && user.loginType === 'local') {
+        if (user.changed('authProvider') && user.authProvider === 'local') {
           if (!user.password) {
             throw new Error('Password is required when switching to local login');
           }
 
           // Hash password if user switches to local
           user.password = await bcrypt.hash(user.password, 12);
-        } else if (user.password && user.changed('password') && user.loginType === 'local') {
-          // Hash password if changed and loginType is local
+        } else if (user.password && user.changed('password') && user.authProvider === 'local') {
+          // Hash password if changed and authProvider is local
           user.password = await bcrypt.hash(user.password, 12);
         }
         
-        // Remove password if loginType is google
-        if (user.loginType === 'google' && user.password) {
+        // Remove password if authProvider is google
+        if (user.authProvider === 'google' && user.password) {
           user.password = null;
         }
       }
@@ -158,7 +164,7 @@ User.init(
         fields: ['isOnline']
       },
       {
-        fields: ['loginType']
+        fields: ['authProvider']
       }
     ]
   }
@@ -166,7 +172,7 @@ User.init(
 
 // add scopes
 User.addScope('active', { where: { isOnline: true } });
-User.addScope('localUsers', { where: { loginType: 'local' } });
-User.addScope('googleUsers', { where: { loginType: 'google' } });
+User.addScope('localUsers', { where: { authProvider: 'local' } });
+User.addScope('googleUsers', { where: { authProvider: 'google' } });
 
 export default User;

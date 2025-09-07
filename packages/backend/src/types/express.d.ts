@@ -12,3 +12,9 @@ declare module 'express' {
     user?: ReqUser;
   }
 }
+
+declare global {
+  namespace Express {
+    interface User extends ReqUser {}
+  }
+}

@@ -3,12 +3,13 @@ export interface ReqUser{
   email: string,
 }
 
-export interface User {
+export interface UserData {
   id: number;
   name: string;
   email: string;
   password: string | null;
-  loginType: 'local' | 'google';
+  authProvider: 'local' | 'google';
+  googleId: string | null;
   imageUrl: string | null;
   lastSeen: Date;
   isOnline: boolean;
