@@ -1,5 +1,5 @@
-import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from 'sequelize';
-import { sequelize } from '../../config/database';
+import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from "sequelize";
+import { sequelize } from "../../config/database";
 
 export class Conversation extends Model<InferAttributes<Conversation>, InferCreationAttributes<Conversation>> {
   declare id: CreationOptional<number>;
@@ -18,37 +18,37 @@ Conversation.init(
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
       references: {
-        model: 'users',
-        key: 'id'
+        model: "users",
+        key: "id"
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
     },
     userTwoId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
       references: {
-        model: 'users',
-        key: 'id'
+        model: "users",
+        key: "id"
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
     }
   },
   {
     sequelize,
-    tableName: 'conversations',
+    tableName: "conversations",
     timestamps: true,
     indexes: [
       {
         unique: true,
-        fields: ['userOneId', 'userTwoId']
+        fields: ["userOneId", "userTwoId"]
       },
       {
-        fields: ['userOneId']
+        fields: ["userOneId"]
       },
       {
-        fields: ['userTwoId']
+        fields: ["userTwoId"]
       }
     ]
   }

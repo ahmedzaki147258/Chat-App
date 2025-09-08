@@ -1,154 +1,181 @@
 'use client';
 
-import { useState } from 'react';
-import { addNumbers } from '@/shared/utils/add';
-import { formatDate } from '@/shared/utils/format';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import Hero from '@/components/Hero';
+import AuthModal from '@/components/Auth/AuthModal';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function Home() {
-  const [result, setResult] = useState<number | null>(null);
-  const [theme, setTheme] = useState('dark');
+export default function HomePage() {
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
-  const handleCalculation = () => {
-    const sum = addNumbers(5, 3);
-    setResult(sum);
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/conversations');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      router.replace('/conversations');
+    } else {
+      setShowLoginModal(true);
+    }
   };
-
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
-
-  const currentTime = formatDate(new Date());
 
   return (
-    <div data-theme={theme} className="min-h-screen bg-base-100">
-      <div className="navbar bg-base-300">
-        <div className="flex-1">
-          <a className="btn btn-ghost text-xl">Chat App</a>
-        </div>
-        <div className="flex-none">
-          <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost">
-              Theme
-              <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 max-h-96 overflow-y-auto">
-              {['light', 'dark', 'cupcake', 'dracula'].map((themeName) => (
-                <li key={themeName}>
-                  <a onClick={() => handleThemeChange(themeName)} className={theme === themeName ? 'active' : ''}>
-                    {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-base-100">
+      <Hero onGetStarted={handleGetStarted} />
+      
+      {/* Features Section */}
+      <section id="features" className="py-20 bg-base-200">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl lg:text-5xl font-bold text-base-content mb-4">
+              Why Choose UltraChat?
+            </h2>
+            <p className="text-xl text-base-content/80 max-w-3xl mx-auto">
+              Discover the features that make UltraChat the perfect choice for modern communication
+            </p>
+          </motion.div>
 
-      <main className="container mx-auto p-8">
-        <div className="hero min-h-[50vh] bg-base-200 rounded-box">
-          <div className="hero-content text-center">
-            <div className="max-w-md">
-              <h1 className="text-5xl font-bold mb-4">Monorepo Demo</h1>
-              <p className="text-lg opacity-70 mb-6">Built with NextJS, Express, and shared packages</p>
-              
-              <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <h2 className="card-title justify-center">Shared Utils Demo</h2>
-                  
-                  <div className="stats stats-vertical lg:stats-horizontal shadow">
-                    <div className="stat">
-                      <div className="stat-title">Current Time</div>
-                      <div className="stat-value text-sm">{currentTime}</div>
-                    </div>
-                  </div>
-
-                  <div className="card-actions justify-center mt-4">
-                    <button 
-                      onClick={handleCalculation}
-                      className="btn btn-primary btn-wide"
-                    >
-                      Calculate 5 + 3
-                    </button>
-                  </div>
-                  
-                  {result !== null && (
-                    <div className="alert alert-success mt-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Result: {result}</span>
-                    </div>
-                  )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: '🚀',
+                title: 'Lightning Fast',
+                description: 'Experience instant responses with our optimized infrastructure and smart caching.',
+                color: 'from-primary to-primary-focus'
+              },
+              {
+                icon: '🛡️',
+                title: 'Secure & Private',
+                description: 'Your conversations are encrypted and protected with enterprise-grade security.',
+                color: 'from-secondary to-secondary-focus'
+              },
+              {
+                icon: '🎨',
+                title: 'Beautiful Design',
+                description: 'Enjoy a stunning interface with multiple themes and smooth animations.',
+                color: 'from-accent to-accent-focus'
+              },
+              {
+                icon: '📱',
+                title: 'Fully Responsive',
+                description: 'Perfect experience across all devices - desktop, tablet, and mobile.',
+                color: 'from-info to-info-focus'
+              },
+              {
+                icon: '🌍',
+                title: 'Global Access',
+                description: 'Connect from anywhere in the world with 99.9% uptime guarantee.',
+                color: 'from-success to-success-focus'
+              },
+              {
+                icon: '⚡',
+                title: 'AI Powered',
+                description: 'Advanced AI capabilities for intelligent and context-aware conversations.',
+                color: 'from-warning to-warning-focus'
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.05, y: -5 }}
+              >
+                <div className="card-body text-center">
+                  <motion.div
+                    className={`text-6xl mb-4 bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`}
+                    whileHover={{ scale: 1.2, rotate: 5 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  >
+                    {feature.icon}
+                  </motion.div>
+                  <h3 className="card-title justify-center text-xl mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-base-content/70">
+                    {feature.description}
+                  </p>
                 </div>
-              </div>
-
-              <div className="mt-8">
-                <div className="badge badge-outline">NextJS</div>
-                <div className="badge badge-outline ml-2">Express</div>
-                <div className="badge badge-outline ml-2">TypeScript</div>
-                <div className="badge badge-outline ml-2">PNPM</div>
-                <div className="badge badge-outline ml-2">DaisyUI</div>
-              </div>
-            </div>
+              </motion.div>
+            ))}
           </div>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
-                </svg>
-                Frontend
-              </h2>
-              <p>NextJS with TypeScript and DaisyUI components</p>
-              <div className="card-actions justify-end">
-                <div className="badge badge-secondary">Port 3000</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clipRule="evenodd" />
-                </svg>
-                Backend
-              </h2>
-              <p>Express API server with TypeScript and nodemon</p>
-              <div className="card-actions justify-end">
-                <div className="badge badge-accent">Port 4000</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <h2 className="card-title">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Shared
-              </h2>
-              <p>Shared types and utilities across packages</p>
-              <div className="card-actions justify-end">
-                <div className="badge badge-primary">Types & Utils</div>
-              </div>
-            </div>
-          </div>
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-primary via-secondary to-accent">
+        <div className="container mx-auto px-4 text-center">
+          <motion.div
+            className="max-w-3xl mx-auto text-white"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+              Ready to Start Chatting?
+            </h2>
+            <p className="text-xl mb-8 opacity-90">
+              Join millions of users who trust UltraChat for their daily communication needs.
+            </p>
+            <motion.button
+              className="btn btn-lg bg-white text-primary hover:bg-base-100 hover:scale-105 px-12"
+              onClick={handleGetStarted}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            >
+              <span className="mr-2">💬</span>
+              {isAuthenticated ? 'Go to Conversations' : 'Get Started Free'}
+            </motion.button>
+          </motion.div>
         </div>
-      </main>
+      </section>
 
-      <footer className="footer footer-center p-10 bg-base-200 text-base-content rounded">
+      {/* Footer */}
+      <footer className="footer footer-center p-10 bg-base-200 text-base-content">
         <div>
-            <p>Copyright © {new Date().getFullYear()} - All rights reserved by Chat App</p>
+          <div className="grid grid-flow-col gap-4">
+            <a className="link link-hover">About</a>
+            <a className="link link-hover">Privacy</a>
+            <a className="link link-hover">Terms</a>
+            <a className="link link-hover">Support</a>
+          </div>
+        </div>
+        <div>
+          <p className="font-bold text-lg">
+            UltraChat
+            <span className="ml-2">💬</span>
+          </p>
+          <p className="text-base-content/70">
+            The future of conversation, today.
+          </p>
+          <p className="text-sm text-base-content/50 mt-4">
+            Copyright © {new Date().getFullYear()} - All rights reserved
+          </p>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      <AuthModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   );
 }

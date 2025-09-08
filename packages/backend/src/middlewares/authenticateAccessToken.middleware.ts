@@ -11,7 +11,7 @@ export const authenticateAccessToken = async (req: Request, res: Response, next:
     }
 
     const decoded = verifyAccessToken(token);
-    if (!decoded || typeof decoded !== 'object' || !decoded.id) {
+    if (!decoded || typeof decoded !== "object" || !decoded.id) {
       return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid token" });
     }
 

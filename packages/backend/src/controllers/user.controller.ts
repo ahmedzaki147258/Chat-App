@@ -11,11 +11,8 @@ export const getUsers = async (req: Request, res: Response) => {
     const users = await User.findAll();
     res.status(httpStatus.OK).json(users);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
@@ -32,34 +29,47 @@ export const getConversationsWithLastMessage = async (req: Request, res: Respons
       include: [
         {
           model: User,
-          as: 'userOne',
+          as: "userOne",
         },
         {
           model: User,
-          as: 'userTwo',
+          as: "userTwo",
         },
         {
           model: Message,
-          as: 'messages',
+          as: "messages",
           limit: 1,
-          order: [['createdAt', 'DESC']],
+          order: [["createdAt", "DESC"]],
           separate: true,
           include: [{
             model: User,
-            as: 'sender',
-            attributes: ['id', 'name']
+            as: "sender",
+            attributes: ["id", "name"]
           }]
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]]
     });
     return res.status(httpStatus.OK).json(conversations);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
+  }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const id: number = req.user?.id!;
+    const { name } = req.body;
+    await User.update({ name }, { where: { id } });
+    const updatedUser = await User.findByPk(id);
+    if (!updatedUser) {
+      return res.status(404).json({ status: "error", message: "User not found" });
     }
+    res.status(200).json({ status: "success", data: updatedUser });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
@@ -74,10 +84,7 @@ export const updateUserImage = async (req: Request, res: Response) => {
 
     res.status(200).json({ status: "success", data: updatedUser });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };

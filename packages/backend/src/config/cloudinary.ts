@@ -1,9 +1,8 @@
-import multer from 'multer';
-// import dotenv from 'dotenv';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { allowedImageFormat, maxImageSize } from "@/shared/types/image";
 
-// dotenv.config();
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -15,8 +14,8 @@ const userStorage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
     return {
-      folder: 'ChatApp/users',
-      allowed_formats: ['jpg', 'png', 'jpeg'],
+      folder: "ChatApp/users",
+      allowed_formats: allowedImageFormat,
       overwrite: true
     };
   }
@@ -26,8 +25,8 @@ const messageStorage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
     return {
-      folder: 'ChatApp/messages',
-      allowed_formats: ['jpg', 'png', 'jpeg'],
+      folder: "ChatApp/messages",
+      allowed_formats: allowedImageFormat,
       overwrite: true
     };
   },
@@ -35,11 +34,11 @@ const messageStorage = new CloudinaryStorage({
 
 export const uploadUserImage = multer({
   storage: userStorage,
-  limits: { fileSize: 1024 * 1024 }, // 1 MB
+  limits: { fileSize: maxImageSize }, // 1 MB
 });
 export const uploadMessageImage = multer({
   storage: messageStorage,
-  limits: { fileSize: 1024 * 1024 }, // 1 MB
+  limits: { fileSize: maxImageSize }, // 1 MB
 });
 
 export { cloudinary };

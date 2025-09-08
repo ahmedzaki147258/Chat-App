@@ -1,10 +1,10 @@
-import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from 'sequelize';
-import { sequelize } from '../../config/database';
+import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from "sequelize";
+import { sequelize } from "../../config/database";
 
 export class Message extends Model<InferAttributes<Message>, InferCreationAttributes<Message>> {
   declare id: CreationOptional<number>;
   declare content: string;
-  declare messageType: 'text' | 'image';
+  declare messageType: "text" | "image";
   declare conversationId: number;
   declare senderId: number;
   declare readAt: Date | null;
@@ -34,29 +34,29 @@ Message.init(
       }
     },
     messageType: {
-      type: DataTypes.ENUM('text', 'image'),
+      type: DataTypes.ENUM("text", "image"),
       allowNull: false,
-      defaultValue: 'text'
+      defaultValue: "text"
     },
     conversationId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
       references: {
-        model: 'conversations',
-        key: 'id'
+        model: "conversations",
+        key: "id"
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
     },
     senderId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
       references: {
-        model: 'users',
-        key: 'id'
+        model: "users",
+        key: "id"
       },
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE'
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE"
     },
     readAt: {
       type: DataTypes.DATE,
@@ -65,23 +65,23 @@ Message.init(
   },
   {
     sequelize,
-    tableName: 'messages',
+    tableName: "messages",
     timestamps: true,
     indexes: [
       {
-        fields: ['conversationId']
+        fields: ["conversationId"]
       },
       {
-        fields: ['senderId']
+        fields: ["senderId"]
       },
       {
-        fields: ['createdAt']
+        fields: ["createdAt"]
       },
       {
-        fields: ['messageType']
+        fields: ["messageType"]
       },
       {
-        fields: ['readAt']
+        fields: ["readAt"]
       }
     ]
   }

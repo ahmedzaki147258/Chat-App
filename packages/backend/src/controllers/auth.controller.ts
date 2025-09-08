@@ -9,17 +9,14 @@ export const loginUser = async (req: Request, res: Response) => {
 		const { email, password } = req.body;
 		const user: User | null = await User.unscoped().findOne({ where: { email } });
 		if (!user || !(await user.validatePassword(password))) {
-			return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid email or password" });
+			return res.status(httpStatus.UNAUTHORIZED).json({ status: "error", message: "Invalid email or password" });
 		}
 
 		await sendAuthTokens(res, user);
     res.status(httpStatus.OK).json({ status: "success", data: user });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
@@ -28,11 +25,8 @@ export const registerUser = async (req: Request, res: Response) => {
 		const user = await User.create(req.body);
     res.status(httpStatus.CREATED).json({ status: "success", data: user.toJSON() });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
@@ -45,11 +39,8 @@ export const logoutUser = async (req: Request, res: Response) => {
 		res.clearCookie("refreshToken");
 		res.status(httpStatus.OK).json({ message: "Logged out successfully" });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: error.message });
-    } else {
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server Error", error: String(error) });
-    }
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
@@ -78,11 +69,20 @@ export const refreshToken = async (req: Request, res: Response) => {
 };
 
 export const getCurrentUser = async (req: Request, res: Response) => {
-  if (req.user) {
+  try {
+    if (!req.user) {
+      return res.status(httpStatus.UNAUTHORIZED).json({ status: "error", message: "Not logged in" });
+    }
+
     const user = await User.findByPk(req.user.id);
-    res.status(httpStatus.OK).json({ user });
-  } else {
-    res.status(httpStatus.UNAUTHORIZED).json({ user: null });
+    if (!user) {
+      return res.status(httpStatus.NOT_FOUND).json({ status: "error", message: "User not found" });
+    }
+
+    res.status(httpStatus.OK).json({ status: "success", data: user });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
   }
 };
 
