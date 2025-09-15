@@ -1,171 +1,451 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import useSocket from '@/hooks/useSocket';
+import { useRouter } from 'next/navigation';
+import { UserData } from '@/shared/types/user';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { ConversationData, MessageData } from '@/shared/types/message';
+import { allowedImageFormat, maxImageSize } from '@/shared/types/image';
+
+// Import components
+import LoadingScreen from '@/components/Conversation/LoadingScreen';
+import ConversationSidebar from '@/components/Conversation/ConversationSidebar';
+import ChatHeader from '@/components/Conversation/ChatHeader';
+import MessagesContainer from '@/components/Conversation/MessagesContainer';
+import NewMessagesIndicator from '@/components/Conversation/NewMessagesIndicator';
+import MessageInput from '@/components/Conversation/MessageInput';
+import UserSearchModal from '@/components/Conversation/UserSearchModal';
+import ImagePreviewModal from '@/components/Conversation/ImagePreviewModal';
+import WelcomeScreen from '@/components/Conversation/WelcomeScreen';
 
 export default function ConversationsPage() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  // Hooks
   const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { socket, isConnected, sendMessage, onNewMessage, offNewMessage } = useSocket();
+
+  // State
+  const [conversations, setConversations] = useState<ConversationData[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationData | null>(null);
+  const [messages, setMessages] = useState<MessageData[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserData[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [showNewMessagesIndicator, setShowNewMessagesIndicator] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Refs
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Callbacks
+  const scrollToBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
+
+  const checkIfAtBottom = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    const container = messagesContainerRef.current;
+    const threshold = 100;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    
+    setIsAtBottom(isAtBottom);
+  
+    if (isAtBottom) {
+      setNewMessagesCount(0);
+      setShowNewMessagesIndicator(false);
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    checkIfAtBottom();
+  }, [checkIfAtBottom]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setIsLoadingConversations(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      
+      const data = await response.json();
+      setConversations(data.data);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [isAuthenticated]);
+
+  const fetchMessages = useCallback(async (conversationId: number) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages`,
+        { credentials: 'include' }
+      );
+      
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      
+      const data = await response.json();
+      setMessages(data.data);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error('Failed to load messages');
+    }
+  }, []);
+
+  const searchUsers = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users?search=${encodeURIComponent(query)}`,
+        { credentials: 'include' }
+      );
+      
+      if (!response.ok) throw new Error('Failed to search users');
+      
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast.error('Failed to search users');
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleNewMessage = useCallback((message: MessageData) => {
+    if (selectedConversation && message.conversationId === selectedConversation.id) {
+      setMessages(prev => [...prev, message]);
+      
+      if (!isAtBottom) {
+        setNewMessagesCount(prev => prev + 1);
+        setShowNewMessagesIndicator(true);
+      }
+    }
+    
+    setConversations(prev => prev.map(conv => {
+      if (conv.id === message.conversationId) {
+        return {
+          ...conv,
+          messages: [message]
+        };
+      }
+      return conv;
+    }));
+  }, [selectedConversation, isAtBottom]);
+
+  const handleSendMessage = useCallback(async () => {
+    if (!newMessage.trim() || !selectedConversation) return;
+
+    const otherUser = selectedConversation.userOne.id === user?.id 
+      ? selectedConversation.userTwo 
+      : selectedConversation.userOne;
+
+    sendMessage({
+      content: newMessage.trim(),
+      messageType: 'text',
+      receiverId: otherUser.id
+    });
+
+    const tempMessage: MessageData = {
+      id: Date.now(),
+      content: newMessage.trim(),
+      messageType: 'text',
+      senderId: user!.id,
+      createdAt: new Date().toISOString(),
+      conversationId: selectedConversation.id,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage('');
+  }, [newMessage, selectedConversation, user, sendMessage]);
+
+  const startNewConversation = useCallback(async (selectedUser: UserData) => {
+    try {
+      const existingConversation = conversations.find(conv => 
+        (conv.userOne.id === selectedUser.id && conv.userTwo.id === user?.id) ||
+        (conv.userOne.id === user?.id && conv.userTwo.id === selectedUser.id)
+      );
+
+      if (existingConversation) {
+        setSelectedConversation(existingConversation);
+        await fetchMessages(existingConversation.id);
+      } else {
+        const newConversation: ConversationData = {
+          id: Date.now(),
+          userOneId: user!.id,
+          userTwoId: selectedUser.id,
+          createdAt: new Date().toISOString(),
+          userOne: user as UserData,
+          userTwo: selectedUser,
+          messages: []
+        };
+        
+        setConversations(prev => [newConversation, ...prev]);
+        setSelectedConversation(newConversation);
+        setMessages([]);
+      }
+      
+      setShowNewChatModal(false);
+      setSearchQuery('');
+      setSearchResults([]);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation');
+    }
+  }, [conversations, user, fetchMessages]);
+
+  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
+    try {
+      setIsUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations/uploadImage`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }, []);
+
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedConversation) return;
+
+    if (!allowedImageFormat.map(ext => `image/${ext}`).includes(file.type)) {
+      toast.warning('Please select an image file');
+      return;
+    }
+
+    if (file.size > maxImageSize) {
+      toast.warning('File size must be less than 1MB');
+      return;
+    }
+
+    const imageUrl = await uploadImage(file);
+    if (imageUrl) {
+      const otherUser = selectedConversation.userOne.id === user?.id 
+        ? selectedConversation.userTwo 
+        : selectedConversation.userOne;
+
+      sendMessage({
+        content: imageUrl,
+        messageType: 'image',
+        receiverId: otherUser.id
+      });
+
+      const tempMessage: MessageData = {
+        id: Date.now(),
+        content: imageUrl,
+        messageType: 'image',
+        senderId: user!.id,
+        createdAt: new Date().toISOString(),
+        conversationId: selectedConversation.id,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+    }
+  }, [selectedConversation, user, sendMessage, uploadImage]);
+
+  const formatTime = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
+    return date.toLocaleDateString('en');
+  }, []);
+
+  const getOtherUser = useCallback((conversation: ConversationData) => {
+    return conversation.userOne.id === user?.id ? conversation.userTwo : conversation.userOne;
+  }, [user]);
+
+  // Effects
+  useEffect(() => {
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isAtBottom, scrollToBottom]);
 
   useEffect(() => {
-    // Redirect to home if not authenticated
+    if (selectedConversation) {
+      setTimeout(() => {
+        scrollToBottom();
+        setIsAtBottom(true);
+        setNewMessagesCount(0);
+        setShowNewMessagesIndicator(false);
+      }, 100);
+    }
+  }, [selectedConversation, scrollToBottom]);
+
+  useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/');
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show loading while checking authentication
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    onNewMessage(handleNewMessage);
+    return () => offNewMessage(handleNewMessage);
+  }, [onNewMessage, offNewMessage, handleNewMessage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchUsers(searchQuery);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchUsers]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [handleScroll]);
+
+  // Render
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-          <p className="mt-4 text-base-content/70">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  // Dont render anything if not authenticated (will redirect)
   if (!isAuthenticated) {
     return null;
   }
 
+  const handleBackToWelcomeConversations = () => {
+    setSelectedConversation(null);
+  };
+
   return (
-    <div className="min-h-screen bg-base-100">
-      <div className="container mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-base-content">
-                Welcome back, {user?.name}! 👋
-              </h1>
-              <p className="text-base-content/70 mt-1">
-                Start a new conversation or continue where you left off
-              </p>
-            </div>
-            <motion.button
-              className="btn btn-primary"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="mr-2">➕</span>
-              New Chat
-            </motion.button>
-          </div>
+    <div className="h-[calc(100vh-64px)] bg-base-100 flex overflow-hidden">
+      {/* Left Sidebar */}
+      <ConversationSidebar
+        conversations={conversations}
+        selectedConversation={selectedConversation}
+        isLoadingConversations={isLoadingConversations}
+        isConnected={isConnected}
+        user={user ?? null}
+        onSelectConversation={(conversation) => {
+          setSelectedConversation(conversation);
+          fetchMessages(conversation.id);
+        }}
+        onBackToConversations={handleBackToWelcomeConversations}
+        onNewConversation={() => setShowNewChatModal(true)}
+        formatTime={formatTime}
+      />
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <motion.div
-              className="card bg-base-200 hover:bg-base-300 cursor-pointer transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="card-body">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">💡</div>
-                  <div>
-                    <h3 className="font-semibold">Quick Question</h3>
-                    <p className="text-sm text-base-content/70">Ask anything</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+      {/* Right Side - Chat Area */}
+      <div className="flex-1 flex flex-col relative">
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <ChatHeader
+              otherUser={getOtherUser(selectedConversation)}
+              formatTime={formatTime}
+            />
 
-            <motion.div
-              className="card bg-base-200 hover:bg-base-300 cursor-pointer transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="card-body">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">📝</div>
-                  <div>
-                    <h3 className="font-semibold">Creative Writing</h3>
-                    <p className="text-sm text-base-content/70">Stories, poems, and more</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            {/* Messages Container */}
+            <MessagesContainer
+              messages={messages}
+              currentUserId={user?.id}
+              isAtBottom={isAtBottom}
+              onScroll={handleScroll}
+              onImageClick={setSelectedImage}
+              formatTime={formatTime}
+              ref={messagesContainerRef}
+            />
 
-            <motion.div
-              className="card bg-base-200 hover:bg-base-300 cursor-pointer transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="card-body">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">🔧</div>
-                  <div>
-                    <h3 className="font-semibold">Problem Solving</h3>
-                    <p className="text-sm text-base-content/70">Get help with tasks</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+            {/* New Messages Indicator */}
+            <NewMessagesIndicator
+              newMessagesCount={newMessagesCount}
+              onScrollToBottom={scrollToBottom}
+            />
 
-          {/* Recent Conversations Placeholder */}
-          <div className="card bg-base-200">
-            <div className="card-body">
-              <h2 className="card-title mb-4">Recent Conversations</h2>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="flex items-center space-x-4 p-4 bg-base-100 rounded-lg hover:bg-base-300 cursor-pointer transition-colors"
-                    whileHover={{ x: 4 }}
-                  >
-                    <div className="avatar placeholder">
-                      <div className="bg-primary text-primary-content rounded-full w-10">
-                        <span>AI</span>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium">Conversation {i}</h4>
-                      <p className="text-sm text-base-content/70">
-                        Last message preview...
-                      </p>
-                    </div>
-                    <div className="text-xs text-base-content/50">
-                      {i === 1 ? 'Just now' : `${i} hours ago`}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Empty State for New Users */}
-          <motion.div
-            className="text-center py-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-2xl font-bold mb-2">Ready to chat?</h3>
-            <p className="text-base-content/70 mb-6">
-              Start your first conversation and experience the power of UltraChat
-            </p>
-            <motion.button
-              className="btn btn-primary btn-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="mr-2">🚀</span>
-              Start Your First Chat
-            </motion.button>
-          </motion.div>
-        </motion.div>
+            {/* Message Input */}
+            <MessageInput
+              newMessage={newMessage}
+              isUploadingImage={isUploadingImage}
+              onMessageChange={setNewMessage}
+              onSendMessage={handleSendMessage}
+              onFileSelect={handleFileSelect}
+            />
+          </>
+        ) : (
+          <WelcomeScreen onNewConversation={() => setShowNewChatModal(true)} />
+        )}
       </div>
+
+      {/* Modals */}
+      <UserSearchModal
+        isOpen={showNewChatModal}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        onSearchChange={setSearchQuery}
+        onSelectUser={startNewConversation}
+        onClose={() => {
+          setShowNewChatModal(false);
+          setSearchQuery('');
+          setSearchResults([]);
+        }}
+      />
+
+      <ImagePreviewModal
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
     </div>
   );
 }

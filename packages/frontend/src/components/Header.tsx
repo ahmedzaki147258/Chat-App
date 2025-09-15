@@ -81,17 +81,6 @@ export default function Header() {
             </motion.button>
           ) : (
             <>
-              <motion.button
-                className="btn btn-outline focus-ring hidden sm:flex"
-                onClick={handleNewConversation}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span className="mr-1">💬</span>
-                New Chat
-              </motion.button>
-
-              {/* User Menu - الكود الباقي نفسه */}
               <div className="relative">
                 <motion.button
                   className="flex items-center space-x-2 btn btn-ghost focus-ring"

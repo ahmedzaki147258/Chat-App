@@ -21,6 +21,7 @@
     "react-hook-form": "^7.62.0",
     "shared-types": "workspace:*",
     "shared-utils": "workspace:*",
+    "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
     "three": "^0.180.0",
     "zod": "^4.1.5"

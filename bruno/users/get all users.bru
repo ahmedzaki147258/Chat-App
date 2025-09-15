@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{SERVER_URL}}/api/users
+  url: {{SERVER_URL}}/api/users?search=ahmed
   body: none
   auth: none
+}
+
+params:query {
+  search: ahmed
 }

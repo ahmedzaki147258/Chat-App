@@ -1,56 +1,25 @@
+import { User } from "src/db";
 import { Op } from "sequelize";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { User, Message, Conversation } from "src/db";
 
 export const getUsers = async (req: Request, res: Response) => {
-  const filters = {};
-  const page = +req.query.page! || 1;
-  const limit = +req.query.limit! || 10;
   try {
-    const users = await User.findAll();
-    res.status(httpStatus.OK).json(users);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
-  }
-};
-
-export const getConversationsWithLastMessage = async (req: Request, res: Response) => {
-  const userId: number = req.user?.id!;
-  try {
-    const conversations = await Conversation.findAll({
-      where: {
+    const id: number = req.user?.id!;
+    const where: any = {
+      id: { [Op.ne]: id } // exclude current user from results
+    };
+    if (req.query.search) {
+      Object.assign(where, {
         [Op.or]: [
-          { userOneId: userId },
-          { userTwoId: userId }
+          { name: { [Op.like]: `%${req.query.search}%` } },
+          { email: { [Op.like]: `%${req.query.search}%` } }
         ]
-      },
-      include: [
-        {
-          model: User,
-          as: "userOne",
-        },
-        {
-          model: User,
-          as: "userTwo",
-        },
-        {
-          model: Message,
-          as: "messages",
-          limit: 1,
-          order: [["createdAt", "DESC"]],
-          separate: true,
-          include: [{
-            model: User,
-            as: "sender",
-            attributes: ["id", "name"]
-          }]
-        }
-      ],
-      order: [["createdAt", "DESC"]]
-    });
-    return res.status(httpStatus.OK).json(conversations);
+      });
+    }
+
+    const users = await User.findAll({ where });
+    res.status(httpStatus.OK).json(users);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });

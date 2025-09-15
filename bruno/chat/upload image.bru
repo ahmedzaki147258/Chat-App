@@ -1,0 +1,15 @@
+meta {
+  name: upload image
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{SERVER_URL}}/api/conversations/uploadImage
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  image: @file(D:\WhatsApp Image 2024-12-13 at 7.02.11 PM.jpeg)
+}
