@@ -46,16 +46,7 @@ export const logoutUser = async (req: Request, res: Response) => {
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
-    if (!token) return res.status(httpStatus.UNAUTHORIZED).json({ message: "Refresh token required" });
-
-    const decoded = verifyRefreshToken(token);
-    const user = await User.unscoped().findByPk(decoded.id);
-    if (!user || user.refreshToken !== token) {
-      return res.status(httpStatus.FORBIDDEN).json({ message: "Invalid refresh token" });
-    }
-
-    const newAccessToken = generateAccessToken({ id: user.id, email: user.email });
+    const newAccessToken = generateAccessToken({ id: req.user!.id, email: req.user!.email });
 		res.cookie("accessToken", newAccessToken, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",

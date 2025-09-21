@@ -1,7 +1,8 @@
 import { toast } from 'sonner';
-import { io, Socket } from "socket.io-client";
-import { useEffect, useRef, useCallback, useState } from "react";
-import { MessageData, SendMessagePayload } from "@/shared/types/message";
+import { apiClient } from '@/lib/axios';
+import { io, Socket } from 'socket.io-client';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { MessageData, SendMessagePayload } from '@/shared/types/message';
 
 interface UseSocketReturn {
   socket: Socket | null;
@@ -15,39 +16,74 @@ export default function useSocket(): UseSocketReturn {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_API_URL!, { withCredentials: true });
+  const refreshAccessToken = async () => {
+    try {
+      await apiClient.post('/api/auth/refresh-token');
+      return true;
+    } catch {
+      toast.error('Session expired. Please log in again.');
+      return false;
+    }
+  };
+
+  // 🔄 function to connect socket
+  const connectSocket = useCallback(async () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    const socket = io(process.env.NEXT_PUBLIC_API_URL!, {
+      withCredentials: true,
+    });
+
     socketRef.current = socket;
 
-    socket.on("connect", () => {
+    socket.on('connect', () => {
       setIsConnected(true);
-      toast.success("Connected to server");
+      toast.success('Connected to server');
     });
 
-    socket.on("disconnect", () => {
+    socket.on('disconnect', () => {
       setIsConnected(false);
-      toast.warning("Disconnected from server");
+      toast.warning('Disconnected from server');
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    // 📌 handle errors
+    socket.on('connect_error', async (err: Error) => {
+      if (err.message.includes('token') || err.message.includes('expired')) {
+        // try to refresh token
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          // try to connect socket with new token
+          connectSocket();
+        }
+      } else {
+        toast.error(`Socket error: ${err.message}`);
+      }
+    });
   }, []);
+
+  useEffect(() => {
+    connectSocket();
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [connectSocket]);
 
   const sendMessage = useCallback((data: SendMessagePayload) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit("sendMessage", data);
+      socketRef.current.emit('sendMessage', data);
     } else {
-      toast.error("Socket is not connected");
+      toast.error('Socket is not connected');
     }
   }, []);
 
   const onNewMessage = useCallback((callback: (message: MessageData) => void) => {
-    socketRef.current?.on("newMessage", callback);
+    socketRef.current?.on('newMessage', callback);
   }, []);
 
   const offNewMessage = useCallback((callback: (message: MessageData) => void) => {
-    socketRef.current?.off("newMessage", callback);
+    socketRef.current?.off('newMessage', callback);
   }, []);
 
   return {
@@ -55,6 +91,6 @@ export default function useSocket(): UseSocketReturn {
     isConnected,
     sendMessage,
     onNewMessage,
-    offNewMessage
+    offNewMessage,
   };
 }

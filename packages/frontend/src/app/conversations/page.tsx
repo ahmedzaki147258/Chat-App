@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import useSocket from '@/hooks/useSocket';
 import { useRouter } from 'next/navigation';
@@ -77,13 +78,7 @@ export default function ConversationsPage() {
     
     try {
       setIsLoadingConversations(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch conversations');
-      
-      const data = await response.json();
+      const { data } = await apiClient.get<{ data: ConversationData[] }>('/api/conversations');
       setConversations(data.data);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -95,14 +90,9 @@ export default function ConversationsPage() {
 
   const fetchMessages = useCallback(async (conversationId: number) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}/messages`,
-        { credentials: 'include' }
+      const { data } = await apiClient.get<{ data: MessageData[] }>(
+        `/api/conversations/${conversationId}/messages`
       );
-      
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      
-      const data = await response.json();
       setMessages(data.data);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -118,14 +108,7 @@ export default function ConversationsPage() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users?search=${encodeURIComponent(query)}`,
-        { credentials: 'include' }
-      );
-      
-      if (!response.ok) throw new Error('Failed to search users');
-      
-      const data = await response.json();
+      const { data } = await apiClient.get<UserData[]>(`/api/users?search=${encodeURIComponent(query)}`);
       setSearchResults(data);
     } catch (error) {
       console.error('Error searching users:', error);
@@ -224,15 +207,14 @@ export default function ConversationsPage() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations/uploadImage`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
+      const { data } = await apiClient.post<{ data: string }>(
+        '/api/conversations/uploadImage',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
 
-      if (!response.ok) throw new Error('Failed to upload image');
-
-      const data = await response.json();
       return data.data;
     } catch (error) {
       console.error('Error uploading image:', error);

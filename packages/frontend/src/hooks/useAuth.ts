@@ -1,12 +1,12 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/api';
-import { LoginRequest, RegisterRequest, UpdateProfileRequest } from '@/types';
+import { apiClient } from '@/lib/axios';
+import { useRouter } from 'next/navigation';
 import { UserData } from '@/shared/types/user';
 import { ApiResponse } from '@/shared/types/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { LoginRequest, RegisterRequest, UpdateProfileRequest } from '@/types';
 
 const AUTH_QUERY_KEY = ['auth', 'user'];
 
@@ -19,8 +19,8 @@ export function useAuth() {
     queryKey: AUTH_QUERY_KEY,
     queryFn: async (): Promise<UserData | null> => {
       try {
-        const response = await apiClient.get<ApiResponse<UserData>>('/api/auth/me');
-        return response.data!; // always return User or null
+        const { data: res } = await apiClient.get<ApiResponse<UserData>>('/api/auth/me');
+        return res.data ?? null;  // always return User or null
       } catch {
         return null; // never return undefined
       }
@@ -32,8 +32,8 @@ export function useAuth() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginRequest) => {
-      const response = await apiClient.post<ApiResponse<UserData>>('/api/auth/login', credentials);
-      return response.data!;
+      const { data: res } = await apiClient.post<ApiResponse<UserData>>('/api/auth/login', credentials);
+      return res.data!;
     },
     onSuccess: (user) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, user);
@@ -48,8 +48,8 @@ export function useAuth() {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterRequest) => {
-      const response = await apiClient.post<ApiResponse<UserData>>('/api/auth/register', userData);
-      return response.data!;
+      const { data: res } = await apiClient.post<ApiResponse<UserData>>('/api/auth/register', userData);
+      return res.data!;
     },
     onSuccess: (user) => {
       toast.success(`Registration successful, please login to continue`);
@@ -78,8 +78,8 @@ export function useAuth() {
   // Update profile name mutation
   const updateProfileNameMutation = useMutation({
     mutationFn: async (data: UpdateProfileRequest) => {
-      const response = await apiClient.patch<ApiResponse<UserData>>('/api/users', data);
-      return response.data!;
+      const { data: res } = await apiClient.patch<ApiResponse<UserData>>('/api/users', data);
+      return res.data!;
     },
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, updatedUser);
@@ -95,8 +95,10 @@ export function useAuth() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('image', file);
-      const response = await apiClient.patchFormData<ApiResponse<UserData>>('/api/users/image', formData);
-      return response.data!;
+      const { data: res } = await apiClient.patch<ApiResponse<UserData>>('/api/users/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data!;
     },
     onMutate: () => {
       const toast_id = toast.loading('Updating profile image...');
