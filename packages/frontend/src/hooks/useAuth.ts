@@ -7,12 +7,24 @@ import { UserData } from '@/shared/types/user';
 import { ApiResponse } from '@/shared/types/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LoginRequest, RegisterRequest, UpdateProfileRequest } from '@/types';
+import { useEffect, useState } from 'react';
 
 const AUTH_QUERY_KEY = ['auth', 'user'];
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const router = useRouter();
+
+  // Track OAuth progress state
+  const [oauthInProgress, setOauthInProgress] = useState(false);
+
+  // Initialize OAuth progress state from localStorage on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isInProgress = window.localStorage.getItem('oauth_in_progress') === 'true';
+      setOauthInProgress(isInProgress);
+    }
+  }, []);
 
 
   // Get current user
@@ -21,6 +33,11 @@ export function useAuth() {
     queryFn: async (): Promise<UserData | null> => {
       try {
         const { data: res } = await apiClient.get<ApiResponse<UserData>>('/api/auth/me');
+        // Clear OAuth flag if we successfully got user data
+        if (res.data && typeof window !== 'undefined') {
+          window.localStorage.removeItem('oauth_in_progress');
+          setOauthInProgress(false);
+        }
         return res.data ?? null;  // always return User or null
       } catch (err: unknown) {
         // If we get a 401, it means tokens are invalid/expired
@@ -42,6 +59,8 @@ export function useAuth() {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: true, // Always enabled
+    // Force refetch if we just returned from OAuth
+    refetchOnMount: oauthInProgress ? 'always' : true,
   });
 
   // Login mutation
@@ -130,7 +149,12 @@ export function useAuth() {
 
   // Google OAuth
   const loginWithGoogle = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`;
+    // Set a flag to indicate we're starting OAuth flow
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('oauth_in_progress', 'true');
+      setOauthInProgress(true);
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`;
+    }
   };
 
   return {
