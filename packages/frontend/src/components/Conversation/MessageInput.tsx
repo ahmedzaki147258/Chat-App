@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { MessageData } from '@/shared/types/message';
-import { XMarkIcon, ReplyIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 
 interface MessageInputProps {
   newMessage: string;
@@ -110,7 +110,7 @@ export default function MessageInput({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <ReplyIcon className="w-4 h-4 text-primary" />
+              <ArrowUturnLeftIcon className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">
                 Replying to {replyToMessage.sender?.name || 'Unknown'}
               </span>

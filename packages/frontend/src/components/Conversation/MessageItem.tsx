@@ -7,7 +7,7 @@ import { MessageData } from "@/shared/types/message";
 import {
   PencilIcon,
   TrashIcon,
-  ReplyIcon,
+  ArrowUturnLeftIcon,
   CheckIcon,
   ClockIcon,
   EllipsisVerticalIcon
@@ -212,7 +212,7 @@ export default function MessageItem({
           }}
           className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-sm"
         >
-          <ReplyIcon className="w-4 h-4" />
+          <ArrowUturnLeftIcon className="w-4 h-4" />
           Reply
         </button>
         
