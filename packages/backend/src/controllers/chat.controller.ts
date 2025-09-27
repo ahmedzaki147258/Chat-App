@@ -2,6 +2,7 @@ import httpStatus from "http-status";
 import { literal, Op } from "sequelize";
 import { Request, Response } from "express";
 import { Conversation, User, Message } from "src/db";
+import { emitToUser } from "src/utils/socket";
 
 export const getConversationsWithLastMessage = async (req: Request, res: Response) => {
   const userId: number = req.user?.id!;
@@ -334,6 +335,9 @@ export const createConversation = async (req: Request, res: Response) => {
         }
       ]
     });
+
+    // Notify the receiver about the new conversation
+    emitToUser(receiverId, "newConversation", fullConversation);
 
     res.status(httpStatus.CREATED).json({ status: "success", data: fullConversation });
   } catch (error: unknown) {

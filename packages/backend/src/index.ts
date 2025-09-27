@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import passport from "./config/passport";
 import { connectDB } from "./config/database";
 import { formatDate } from "@/shared/utils/format";
+import { setSocketServer } from "./utils/socket";
 import express, { Request, Response } from "express";
 import { authRoutes, userRoutes, chatRoutes } from "./routes";
 
@@ -20,6 +21,7 @@ app.use(passport.initialize());
 
 const server = createServer(app);
 const io = new Server(server, { cors: corsOption });
+setSocketServer(io);
 initSocket(io);
 
 app.get("/", (req: Request, res: Response) => {

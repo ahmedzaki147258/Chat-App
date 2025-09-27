@@ -2,11 +2,12 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/axios';
 import { io, Socket } from 'socket.io-client';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { 
-  MessageData, 
-  SendMessagePayload, 
-  EditMessagePayload, 
-  DeleteMessagePayload, 
+import {
+  MessageData,
+  ConversationData,
+  SendMessagePayload,
+  EditMessagePayload,
+  DeleteMessagePayload,
   MarkMessageReadPayload,
   TypingPayload,
   UserStatusPayload
@@ -38,6 +39,8 @@ interface UseSocketReturn {
   offUserTyping: (callback: (data: TypingPayload & { userId: number }) => void) => void;
   onUserStatusChanged: (callback: (data: UserStatusPayload) => void) => void;
   offUserStatusChanged: (callback: (data: UserStatusPayload) => void) => void;
+  onNewConversation: (callback: (conversation: ConversationData) => void) => void;
+  offNewConversation: (callback: (conversation: ConversationData) => void) => void;
 }
 
 export default function useSocket(isAuthenticated?: boolean): UseSocketReturn {
@@ -254,6 +257,14 @@ export default function useSocket(isAuthenticated?: boolean): UseSocketReturn {
     socketRef.current?.off('userStatusChanged', callback);
   }, []);
 
+  const onNewConversation = useCallback((callback: (conversation: ConversationData) => void) => {
+    socketRef.current?.on('newConversation', callback);
+  }, []);
+
+  const offNewConversation = useCallback((callback: (conversation: ConversationData) => void) => {
+    socketRef.current?.off('newConversation', callback);
+  }, []);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -278,5 +289,7 @@ export default function useSocket(isAuthenticated?: boolean): UseSocketReturn {
     offUserTyping,
     onUserStatusChanged,
     offUserStatusChanged,
+    onNewConversation,
+    offNewConversation,
   };
 }

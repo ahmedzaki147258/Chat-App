@@ -48,11 +48,13 @@ export default function chatSocket(io: Server, socket: Socket) {
           ]
         }
       });
-      
+
+      const isNewConversation = !conversation;
+
       if (!conversation) {
-        conversation = await Conversation.create({ 
-          userOneId: userId, 
-          userTwoId: receiverId 
+        conversation = await Conversation.create({
+          userOneId: userId,
+          userTwoId: receiverId
         });
       }
 
@@ -98,8 +100,27 @@ export default function chatSocket(io: Server, socket: Socket) {
       // Emit to receiver
       if (receiverSocket) {
         io.to(receiverSocket).emit("newMessage", fullMessage);
+
+        // Also emit newConversation if this is the first message in a new conversation
+        if (isNewConversation) {
+          const fullConversation = await Conversation.findByPk(conversation.id, {
+            include: [
+              {
+                model: User,
+                as: "userOne",
+                attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+              },
+              {
+                model: User,
+                as: "userTwo",
+                attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+              }
+            ]
+          });
+          io.to(receiverSocket).emit("newConversation", fullConversation);
+        }
       }
-      
+
       // Emit back to sender for confirmation
       socket.emit("messageSent", fullMessage);
 

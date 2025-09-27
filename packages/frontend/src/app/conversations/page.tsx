@@ -46,7 +46,9 @@ export default function ConversationsPage() {
     onUserTyping,
     offUserTyping,
     onUserStatusChanged,
-    offUserStatusChanged
+    offUserStatusChanged,
+    onNewConversation,
+    offNewConversation
   } = useSocket(isAuthenticated);
 
   // State
@@ -281,6 +283,25 @@ export default function ConversationsPage() {
     })));
   }, []);
 
+  const handleNewConversation = useCallback((conversation: ConversationData) => {
+    // Add the new conversation to the list if it doesn't already exist
+    setConversations(prev => {
+      const exists = prev.some(conv => conv.id === conversation.id);
+      if (exists) return prev;
+
+      // Add new conversation to the top of the list
+      return [conversation, ...prev];
+    });
+
+    // Update user statuses
+    setUserStatuses(prev => {
+      const updated = new Map(prev);
+      updated.set(conversation.userOne.id, conversation.userOne);
+      updated.set(conversation.userTwo.id, conversation.userTwo);
+      return updated;
+    });
+  }, []);
+
   // ==================== MESSAGE OPERATIONS ====================
 
   const handleSendMessage = useCallback(async () => {
@@ -502,6 +523,7 @@ export default function ConversationsPage() {
     onMessageRead(handleMessageRead);
     onUserTyping(handleUserTyping);
     onUserStatusChanged(handleUserStatusChanged);
+    onNewConversation(handleNewConversation);
 
     return () => {
       socket?.off('messageSent', handleMessageSentEvent);
@@ -511,6 +533,7 @@ export default function ConversationsPage() {
       offMessageRead(handleMessageRead);
       offUserTyping(handleUserTyping);
       offUserStatusChanged(handleUserStatusChanged);
+      offNewConversation(handleNewConversation);
     };
   }, [
     socket, handleMessageSent,
@@ -519,7 +542,8 @@ export default function ConversationsPage() {
     onMessageDeleted, offMessageDeleted, handleMessageDeleted,
     onMessageRead, offMessageRead, handleMessageRead,
     onUserTyping, offUserTyping, handleUserTyping,
-    onUserStatusChanged, offUserStatusChanged, handleUserStatusChanged
+    onUserStatusChanged, offUserStatusChanged, handleUserStatusChanged,
+    onNewConversation, offNewConversation, handleNewConversation
   ]);
 
   useEffect(() => {
