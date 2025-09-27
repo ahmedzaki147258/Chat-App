@@ -14,6 +14,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      console.log('User authenticated, redirecting to conversations');
       router.replace('/conversations');
     }
   }, [isAuthenticated, isLoading, router]);

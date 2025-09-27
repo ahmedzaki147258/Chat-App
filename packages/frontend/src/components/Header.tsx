@@ -11,7 +11,7 @@ import ProfileModal from './ProfileModal';
 
 export default function Header() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -70,7 +70,9 @@ export default function Header() {
         <div className="navbar-end space-x-2">
           <ThemeToggle />
 
-          {!isAuthenticated ? (
+          {isLoading ? (
+            <div className="loading loading-spinner loading-sm"></div>
+          ) : !isAuthenticated ? (
             <motion.button
               className="btn btn-primary focus-ring"
               onClick={() => setShowAuthModal(true)}

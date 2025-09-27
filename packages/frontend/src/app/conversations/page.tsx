@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import useSocket from '@/hooks/useSocket';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserData } from '@/shared/types/user';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { ConversationData, MessageData } from '@/shared/types/message';
@@ -24,8 +25,29 @@ import WelcomeScreen from '@/components/Conversation/WelcomeScreen';
 export default function ConversationsPage() {
   // Hooks
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { socket, isConnected, sendMessage, onNewMessage, offNewMessage } = useSocket();
+  const {
+    socket,
+    isConnected,
+    sendMessage,
+    editMessage,
+    deleteMessage,
+    markMessageRead,
+    sendTyping,
+    onNewMessage,
+    offNewMessage,
+    onMessageEdited,
+    offMessageEdited,
+    onMessageDeleted,
+    offMessageDeleted,
+    onMessageRead,
+    offMessageRead,
+    onUserTyping,
+    offUserTyping,
+    onUserStatusChanged,
+    offUserStatusChanged
+  } = useSocket(isAuthenticated);
 
   // State
   const [conversations, setConversations] = useState<ConversationData[]>([]);
@@ -34,6 +56,7 @@ export default function ConversationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserData[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [replyToMessage, setReplyToMessage] = useState<MessageData | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
@@ -42,6 +65,8 @@ export default function ConversationsPage() {
   const [showNewMessagesIndicator, setShowNewMessagesIndicator] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Map<number, UserData>>(new Map());
+  const [userStatuses, setUserStatuses] = useState<Map<number, UserData>>(new Map());
 
   // Refs
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -74,12 +99,23 @@ export default function ConversationsPage() {
   }, [checkIfAtBottom]);
 
   const fetchConversations = useCallback(async () => {
-    if (!isAuthenticated) return;
-    
+    if (!isAuthenticated) {
+      setIsLoadingConversations(false);
+      return;
+    }
+
     try {
       setIsLoadingConversations(true);
       const { data } = await apiClient.get<{ data: ConversationData[] }>('/api/conversations');
       setConversations(data.data);
+
+      // Initialize user statuses
+      const statusMap = new Map<number, UserData>();
+      data.data.forEach(conv => {
+        statusMap.set(conv.userOne.id, conv.userOne);
+        statusMap.set(conv.userTwo.id, conv.userTwo);
+      });
+      setUserStatuses(statusMap);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast.error('Failed to load conversations');
@@ -118,6 +154,8 @@ export default function ConversationsPage() {
     }
   }, []);
 
+  // ==================== SOCKET EVENT HANDLERS ====================
+  
   const handleNewMessage = useCallback((message: MessageData) => {
     if (selectedConversation && message.conversationId === selectedConversation.id) {
       setMessages(prev => [...prev, message]);
@@ -128,16 +166,94 @@ export default function ConversationsPage() {
       }
     }
     
-    setConversations(prev => prev.map(conv => {
-      if (conv.id === message.conversationId) {
-        return {
-          ...conv,
-          messages: [message]
-        };
+    // Update conversations list
+    setConversations(prev => {
+      const updated = prev.map(conv => {
+        if (conv.id === message.conversationId) {
+          return {
+            ...conv,
+            messages: [message],
+            unreadCount: message.senderId === user?.id ? 0 : (conv.unreadCount || 0) + 1
+          };
+        }
+        return conv;
+      });
+      
+      // Sort by last message time
+      return updated.sort((a, b) => {
+        const aTime = a.messages[0]?.createdAt || a.createdAt;
+        const bTime = b.messages[0]?.createdAt || b.createdAt;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
+    });
+  }, [selectedConversation, isAtBottom, user?.id]);
+
+  const handleMessageEdited = useCallback((editedMessage: MessageData) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === editedMessage.id ? editedMessage : msg
+    ));
+  }, []);
+
+  const handleMessageDeleted = useCallback((data: { messageId: number; conversationId: number }) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === data.messageId 
+        ? { ...msg, isDeleted: true, content: "This message was deleted" }
+        : msg
+    ));
+  }, []);
+
+  const handleMessageRead = useCallback((data: { messageId: number; readBy: number; readAt: Date }) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === data.messageId 
+        ? { ...msg, readAt: data.readAt.toString() }
+        : msg
+    ));
+  }, []);
+
+  const handleUserTyping = useCallback((data: { conversationId: number; userId: number; isTyping: boolean }) => {
+    if (!selectedConversation || data.conversationId !== selectedConversation.id) return;
+    
+    const user = userStatuses.get(data.userId);
+    if (!user) return;
+
+    setTypingUsers(prev => {
+      const updated = new Map(prev);
+      if (data.isTyping) {
+        updated.set(data.userId, user);
+      } else {
+        updated.delete(data.userId);
       }
-      return conv;
-    }));
-  }, [selectedConversation, isAtBottom]);
+      return updated;
+    });
+  }, [selectedConversation, userStatuses]);
+
+  const handleUserStatusChanged = useCallback((data: { userId: number; isOnline: boolean; lastSeen?: Date }) => {
+    setUserStatuses(prev => {
+      const updated = new Map(prev);
+      const existingUser = updated.get(data.userId);
+      if (existingUser) {
+        updated.set(data.userId, {
+          ...existingUser,
+          isOnline: data.isOnline,
+          lastSeen: data.lastSeen || existingUser.lastSeen
+        });
+      }
+      return updated;
+    });
+
+    // Update conversations with new user status
+    setConversations(prev => prev.map(conv => ({
+      ...conv,
+      userOne: conv.userOne.id === data.userId 
+        ? { ...conv.userOne, isOnline: data.isOnline, lastSeen: data.lastSeen || conv.userOne.lastSeen }
+        : conv.userOne,
+      userTwo: conv.userTwo.id === data.userId 
+        ? { ...conv.userTwo, isOnline: data.isOnline, lastSeen: data.lastSeen || conv.userTwo.lastSeen }
+        : conv.userTwo
+    })));
+  }, []);
+
+  // ==================== MESSAGE OPERATIONS ====================
 
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation) return;
@@ -149,7 +265,8 @@ export default function ConversationsPage() {
     sendMessage({
       content: newMessage.trim(),
       messageType: 'text',
-      receiverId: otherUser.id
+      receiverId: otherUser.id,
+      replyToMessageId: replyToMessage?.id
     });
 
     const tempMessage: MessageData = {
@@ -157,14 +274,70 @@ export default function ConversationsPage() {
       content: newMessage.trim(),
       messageType: 'text',
       senderId: user!.id,
-      createdAt: new Date().toISOString(),
       conversationId: selectedConversation.id,
+      readAt: null,
+      deliveredAt: null,
+      isEdited: false,
+      isDeleted: false,
+      editedAt: null,
+      deletedAt: null,
+      replyToMessageId: replyToMessage?.id || null,
+      replyToMessage: replyToMessage,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, tempMessage]);
     setNewMessage('');
-  }, [newMessage, selectedConversation, user, sendMessage]);
+    setReplyToMessage(null);
+  }, [newMessage, selectedConversation, user, sendMessage, replyToMessage]);
+
+  const handleEditMessage = useCallback((messageId: number, content: string) => {
+    if (!selectedConversation) return;
+    
+    editMessage({
+      messageId,
+      content,
+      conversationId: selectedConversation.id
+    });
+  }, [selectedConversation, editMessage]);
+
+  const handleDeleteMessage = useCallback((messageId: number) => {
+    if (!selectedConversation) return;
+    
+    deleteMessage({
+      messageId,
+      conversationId: selectedConversation.id
+    });
+  }, [selectedConversation, deleteMessage]);
+
+  const handleReplyToMessage = useCallback((message: MessageData) => {
+    setReplyToMessage(message);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyToMessage(null);
+  }, []);
+
+  const handleMarkMessageRead = useCallback((messageId: number) => {
+    if (!selectedConversation) return;
+    
+    markMessageRead({
+      messageId,
+      conversationId: selectedConversation.id
+    });
+  }, [selectedConversation, markMessageRead]);
+
+  const handleTyping = useCallback((isTyping: boolean) => {
+    if (!selectedConversation) return;
+    
+    sendTyping({
+      conversationId: selectedConversation.id,
+      isTyping
+    });
+  }, [selectedConversation, sendTyping]);
+
+  // ==================== OTHER HANDLERS ====================
 
   const startNewConversation = useCallback(async (selectedUser: UserData) => {
     try {
@@ -182,6 +355,8 @@ export default function ConversationsPage() {
           userOneId: user!.id,
           userTwoId: selectedUser.id,
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          unreadCount: 0,
           userOne: user as UserData,
           userTwo: selectedUser,
           messages: []
@@ -248,7 +423,8 @@ export default function ConversationsPage() {
       sendMessage({
         content: imageUrl,
         messageType: 'image',
-        receiverId: otherUser.id
+        receiverId: otherUser.id,
+        replyToMessageId: replyToMessage?.id
       });
 
       const tempMessage: MessageData = {
@@ -256,14 +432,23 @@ export default function ConversationsPage() {
         content: imageUrl,
         messageType: 'image',
         senderId: user!.id,
-        createdAt: new Date().toISOString(),
         conversationId: selectedConversation.id,
+        readAt: null,
+        deliveredAt: null,
+        isEdited: false,
+        isDeleted: false,
+        editedAt: null,
+        deletedAt: null,
+        replyToMessageId: replyToMessage?.id || null,
+        replyToMessage: replyToMessage,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, tempMessage]);
+      setReplyToMessage(null);
     }
-  }, [selectedConversation, user, sendMessage, uploadImage]);
+  }, [selectedConversation, user, sendMessage, uploadImage, replyToMessage]);
 
   const formatTime = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -279,7 +464,8 @@ export default function ConversationsPage() {
     return conversation.userOne.id === user?.id ? conversation.userTwo : conversation.userOne;
   }, [user]);
 
-  // Effects
+  // ==================== EFFECTS ====================
+
   useEffect(() => {
     if (isAtBottom) {
       scrollToBottom();
@@ -293,24 +479,50 @@ export default function ConversationsPage() {
         setIsAtBottom(true);
         setNewMessagesCount(0);
         setShowNewMessagesIndicator(false);
+        setTypingUsers(new Map()); // Clear typing indicators when switching conversations
       }, 100);
     }
   }, [selectedConversation, scrollToBottom]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      // Clear any cached auth data to prevent loops
+      queryClient.setQueryData(['auth', 'user'], null);
       router.replace('/');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, queryClient]);
 
   useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
+    if (isAuthenticated && !isLoading) {
+      fetchConversations();
+    }
+  }, [fetchConversations, isAuthenticated, isLoading]);
 
+  // Socket event listeners
   useEffect(() => {
     onNewMessage(handleNewMessage);
-    return () => offNewMessage(handleNewMessage);
-  }, [onNewMessage, offNewMessage, handleNewMessage]);
+    onMessageEdited(handleMessageEdited);
+    onMessageDeleted(handleMessageDeleted);
+    onMessageRead(handleMessageRead);
+    onUserTyping(handleUserTyping);
+    onUserStatusChanged(handleUserStatusChanged);
+
+    return () => {
+      offNewMessage(handleNewMessage);
+      offMessageEdited(handleMessageEdited);
+      offMessageDeleted(handleMessageDeleted);
+      offMessageRead(handleMessageRead);
+      offUserTyping(handleUserTyping);
+      offUserStatusChanged(handleUserStatusChanged);
+    };
+  }, [
+    onNewMessage, offNewMessage, handleNewMessage,
+    onMessageEdited, offMessageEdited, handleMessageEdited,
+    onMessageDeleted, offMessageDeleted, handleMessageDeleted,
+    onMessageRead, offMessageRead, handleMessageRead,
+    onUserTyping, offUserTyping, handleUserTyping,
+    onUserStatusChanged, offUserStatusChanged, handleUserStatusChanged
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -337,7 +549,8 @@ export default function ConversationsPage() {
     };
   }, [handleScroll]);
 
-  // Render
+  // ==================== RENDER ====================
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -348,6 +561,8 @@ export default function ConversationsPage() {
 
   const handleBackToWelcomeConversations = () => {
     setSelectedConversation(null);
+    setReplyToMessage(null);
+    setTypingUsers(new Map());
   };
 
   return (
@@ -375,6 +590,7 @@ export default function ConversationsPage() {
             {/* Chat Header */}
             <ChatHeader
               otherUser={getOtherUser(selectedConversation)}
+              isTyping={typingUsers.has(getOtherUser(selectedConversation).id)}
               formatTime={formatTime}
             />
 
@@ -383,8 +599,13 @@ export default function ConversationsPage() {
               messages={messages}
               currentUserId={user?.id}
               isAtBottom={isAtBottom}
+              typingUsers={typingUsers}
               onScroll={handleScroll}
               onImageClick={setSelectedImage}
+              onEditMessage={handleEditMessage}
+              onDeleteMessage={handleDeleteMessage}
+              onReplyToMessage={handleReplyToMessage}
+              onMarkMessageRead={handleMarkMessageRead}
               formatTime={formatTime}
               ref={messagesContainerRef}
             />
@@ -399,9 +620,12 @@ export default function ConversationsPage() {
             <MessageInput
               newMessage={newMessage}
               isUploadingImage={isUploadingImage}
+              replyToMessage={replyToMessage}
               onMessageChange={setNewMessage}
               onSendMessage={handleSendMessage}
               onFileSelect={handleFileSelect}
+              onCancelReply={handleCancelReply}
+              onTyping={handleTyping}
             />
           </>
         ) : (

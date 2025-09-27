@@ -1,16 +1,38 @@
-import User from "./User";
-import Conversation from "./Conversation";
-import Message from "./Message";
+import { User } from "./User";
+import { Message } from "./Message";
+import { Conversation } from "./Conversation";
 
-// User-Conversation relationships
+// User - Message relationships
+User.hasMany(Message, {
+  foreignKey: "senderId",
+  as: "sentMessages"
+});
+
+Message.belongsTo(User, {
+  foreignKey: "senderId",
+  as: "sender"
+});
+
+// Conversation - Message relationships
+Conversation.hasMany(Message, {
+  foreignKey: "conversationId",
+  as: "messages"
+});
+
+Message.belongsTo(Conversation, {
+  foreignKey: "conversationId",
+  as: "conversation"
+});
+
+// User - Conversation relationships
 User.hasMany(Conversation, {
   foreignKey: "userOneId",
-  as: "startedConversations"
+  as: "conversationsAsUserOne"
 });
 
 User.hasMany(Conversation, {
-  foreignKey: "userTwoId",
-  as: "receivedConversations"
+  foreignKey: "userTwoId", 
+  as: "conversationsAsUserTwo"
 });
 
 Conversation.belongsTo(User, {
@@ -23,26 +45,15 @@ Conversation.belongsTo(User, {
   as: "userTwo"
 });
 
-// Conversation-Message relationships
-Conversation.hasMany(Message, {
-  foreignKey: "conversationId",
-  as: "messages"
+// Message - Message relationships (for replies)
+Message.hasMany(Message, {
+  foreignKey: "replyToMessageId",
+  as: "replies"
 });
 
-Message.belongsTo(Conversation, {
-  foreignKey: "conversationId",
-  as: "conversation"
+Message.belongsTo(Message, {
+  foreignKey: "replyToMessageId",
+  as: "replyToMessage"
 });
 
-// User-Message relationships
-User.hasMany(Message, {
-  foreignKey: "senderId",
-  as: "sentMessages"
-});
-
-Message.belongsTo(User, {
-  foreignKey: "senderId",
-  as: "sender"
-});
-
-export { User, Conversation, Message };
+export { User, Message, Conversation };

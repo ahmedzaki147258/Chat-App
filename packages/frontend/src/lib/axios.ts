@@ -32,7 +32,10 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('401 error intercepted for:', originalRequest.url);
+      
       if (isRefreshing) {
+        console.log('Already refreshing, queueing request');
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(() => {
@@ -46,15 +49,33 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        console.log('Attempting to refresh token...');
         // request refresh token
         await apiClient.post('/api/auth/refresh-token', {}, { withCredentials: true });
+        console.log('Token refresh successful');
 
         processQueue(null, 'done');
         return apiClient(originalRequest);
       } catch (err) {
+        console.error('Token refresh failed:', err);
         processQueue(err, null);
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
+
+        // Only redirect if we're in the browser, this isn't the refresh endpoint itself,
+        // and we're not already on the login page
+        if (typeof window !== 'undefined' &&
+            !originalRequest.url?.includes('/api/auth/refresh-token') &&
+            !window.location.pathname.includes('/conversations')) {
+          // Prevent redirect loops by checking if we just redirected
+          const lastRedirect = localStorage.getItem('lastAuthRedirect');
+          const now = Date.now();
+
+          if (!lastRedirect || (now - parseInt(lastRedirect)) > 5000) { // 5 second cooldown
+            console.log('Redirecting to login page');
+            localStorage.setItem('lastAuthRedirect', now.toString());
+            window.location.href = '/';
+          } else {
+            console.log('Preventing redirect loop, too soon since last redirect');
+          }
         }
         return Promise.reject(err);
       } finally {

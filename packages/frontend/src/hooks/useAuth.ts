@@ -18,15 +18,37 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery<UserData | null>({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async (): Promise<UserData | null> => {
+      // Check if we have any tokens in cookies first
+      if (typeof document !== 'undefined') {
+        const hasCookies = document.cookie.includes('accessToken') || document.cookie.includes('refreshToken');
+        if (!hasCookies) {
+          console.log('🔍 No auth cookies found, skipping auth check');
+          return null;
+        }
+        console.log('🔍 Auth cookies found, proceeding with auth check');
+      }
+
       try {
         const { data: res } = await apiClient.get<ApiResponse<UserData>>('/api/auth/me');
         return res.data ?? null;  // always return User or null
-      } catch {
-        return null; // never return undefined
+      } catch (err: any) {
+        // If we get a 401 and it's not a refresh attempt, don't retry
+        if (err.response?.status === 401) {
+          console.log('Authentication failed, user not logged in');
+          return null;
+        }
+        throw err; // Re-throw for other errors
       }
     },
-    retry: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 errors
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 1; // Retry once for other errors
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: true, // Always enabled but we'll check cookies first
   });
 
   // Login mutation
