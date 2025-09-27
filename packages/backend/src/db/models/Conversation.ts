@@ -8,9 +8,9 @@ export class Conversation extends Model<InferAttributes<Conversation>, InferCrea
   declare lastMessageAt: CreationOptional<Date>;
   declare userOneUnreadCount: CreationOptional<number>;
   declare userTwoUnreadCount: CreationOptional<number>;
+  declare unreadCount: CreationOptional<number>;
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
-  declare unreadCount: CreationOptional<number>;
 
   // Helper methods
   getUnreadCountForUser(userId: number): number {

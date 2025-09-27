@@ -2,7 +2,7 @@ import { User } from "src/db";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
 import { sendAuthTokens } from "src/utils/auth";
-import { generateAccessToken, verifyRefreshToken } from "src/utils/jwt";
+import { generateAccessToken } from "src/utils/jwt";
 
 export const loginUser = async (req: Request, res: Response) => {
 	try {

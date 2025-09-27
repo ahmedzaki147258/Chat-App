@@ -1,8 +1,8 @@
+import { User } from "src/db";
 import { parse } from "cookie";
 import jwt from "jsonwebtoken";
 import { Socket } from "socket.io";
 import { verifyAccessToken } from "src/utils/jwt";
-import { User } from "src/db";
 
 export const socketAuthMiddleware = async (socket: Socket, next: (err?: Error) => void) => {
   try {
@@ -36,11 +36,10 @@ export const socketAuthMiddleware = async (socket: Socket, next: (err?: Error) =
 
     socket.user = { 
       id: user.id, 
-      name: user.name, 
       email: user.email 
     };
     
-    console.log(`Socket authenticated for user: ${user.name} (${user.id})`);
+    console.log(`Socket authenticated for user: ${user.email} (${user.id})`);
     next();
   } catch (err: unknown) {
     console.error('Socket auth error:', err);

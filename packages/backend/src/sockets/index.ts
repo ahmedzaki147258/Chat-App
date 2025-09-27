@@ -1,8 +1,8 @@
+import { User } from "src/db";
+import chatSocket from "./chat.socket";
 import { Server, Socket } from "socket.io";
 import { socketAuthMiddleware } from "src/middlewares/socket.middleware";
 import { addUserSocket, getAllSockets, removeUserSocket } from "./socketUserMap";
-import chatSocket from "./chat.socket";
-import { User } from "src/db";
 
 export default function initSocket(io: Server) {
   io.use(socketAuthMiddleware);

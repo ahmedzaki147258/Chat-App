@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import { User } from "src/db";
 import jwt from "jsonwebtoken";
 import httpStatus from "http-status";
-import { User } from "src/db";
 import { verifyRefreshToken } from "src/utils/jwt";
+import { NextFunction, Request, Response } from "express";
 
 export const authenticateRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
