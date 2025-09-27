@@ -11,11 +11,19 @@ import ProfileModal from './ProfileModal';
 
 export default function Header() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    isLoginPending,
+    isRegisterPending
+  } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Show loading only during actual login/register operations, not during initial auth check
+  const isAuthenticating = isLoginPending || isRegisterPending;
 
   const handleBrandClick = () => {
     router.push('/');
@@ -70,16 +78,22 @@ export default function Header() {
         <div className="navbar-end space-x-2">
           <ThemeToggle />
 
-          {isLoading ? (
-            <div className="loading loading-spinner loading-sm"></div>
-          ) : !isAuthenticated ? (
+          {!isAuthenticated ? (
             <motion.button
               className="btn btn-primary focus-ring"
               onClick={() => setShowAuthModal(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              disabled={isAuthenticating}
+              whileHover={{ scale: isAuthenticating ? 1 : 1.05 }}
+              whileTap={{ scale: isAuthenticating ? 1 : 0.95 }}
             >
-              Login
+              {isAuthenticating ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Loading...
+                </>
+              ) : (
+                'Login'
+              )}
             </motion.button>
           ) : (
             <>

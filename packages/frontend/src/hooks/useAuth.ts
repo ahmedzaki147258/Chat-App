@@ -14,41 +14,34 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
+
   // Get current user
   const { data: user, isLoading, error } = useQuery<UserData | null>({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async (): Promise<UserData | null> => {
-      // Check if we have any tokens in cookies first
-      if (typeof document !== 'undefined') {
-        const hasCookies = document.cookie.includes('accessToken') || document.cookie.includes('refreshToken');
-        if (!hasCookies) {
-          console.log('🔍 No auth cookies found, skipping auth check');
-          return null;
-        }
-        console.log('🔍 Auth cookies found, proceeding with auth check');
-      }
-
       try {
         const { data: res } = await apiClient.get<ApiResponse<UserData>>('/api/auth/me');
         return res.data ?? null;  // always return User or null
-      } catch (err: any) {
-        // If we get a 401 and it's not a refresh attempt, don't retry
-        if (err.response?.status === 401) {
+      } catch (err: unknown) {
+        // If we get a 401, it means tokens are invalid/expired
+        const axiosError = err as { response?: { status?: number } };
+        if (axiosError?.response?.status === 401) {
           console.log('Authentication failed, user not logged in');
           return null;
         }
         throw err; // Re-throw for other errors
       }
     },
-    retry: (failureCount, error: any) => {
-      // Don't retry on 401 errors
-      if (error?.response?.status === 401) {
-        return false;
+    retry: (failureCount, error: unknown) => {
+      // Allow one retry on 401 errors (axios interceptor will handle token refresh)
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 401) {
+        return failureCount < 1; // Retry once for 401 errors
       }
       return failureCount < 1; // Retry once for other errors
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: true, // Always enabled but we'll check cookies first
+    enabled: true, // Always enabled
   });
 
   // Login mutation

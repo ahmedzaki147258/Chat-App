@@ -204,7 +204,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
                     {/* Switch to Register */}
                     <div className="text-center mt-6">
-                      <span className="text-base-content/70">Don't have an account? </span>
+                      <span className="text-base-content/70">Don&apos;t have an account? </span>
                       <button
                         type="button"
                         className="link link-primary font-medium"

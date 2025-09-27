@@ -62,7 +62,7 @@ export default function LogoutConfirm({ isOpen, onClose }: LogoutConfirmProps) {
                 Confirm Logout
               </h3>
               <p className="text-base-content/70">
-                Are you sure you want to logout? You'll need to sign in again to access your conversations.
+                Are you sure you want to logout? You&apos;ll need to sign in again to access your conversations.
               </p>
             </div>
 
