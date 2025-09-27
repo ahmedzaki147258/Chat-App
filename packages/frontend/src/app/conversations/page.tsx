@@ -159,13 +159,13 @@ export default function ConversationsPage() {
   const handleNewMessage = useCallback((message: MessageData) => {
     if (selectedConversation && message.conversationId === selectedConversation.id) {
       setMessages(prev => [...prev, message]);
-      
+
       if (!isAtBottom) {
         setNewMessagesCount(prev => prev + 1);
         setShowNewMessagesIndicator(true);
       }
     }
-    
+
     // Update conversations list
     setConversations(prev => {
       const updated = prev.map(conv => {
@@ -178,7 +178,7 @@ export default function ConversationsPage() {
         }
         return conv;
       });
-      
+
       // Sort by last message time
       return updated.sort((a, b) => {
         const aTime = a.messages[0]?.createdAt || a.createdAt;
@@ -187,6 +187,34 @@ export default function ConversationsPage() {
       });
     });
   }, [selectedConversation, isAtBottom, user?.id]);
+
+  const handleMessageSent = useCallback((message: MessageData) => {
+    if (selectedConversation && message.conversationId === selectedConversation.id) {
+      // Add the confirmed message to the messages list
+      setMessages(prev => [...prev, message]);
+
+      // Update conversations list
+      setConversations(prev => {
+        const updated = prev.map(conv => {
+          if (conv.id === message.conversationId) {
+            return {
+              ...conv,
+              messages: [message],
+              unreadCount: 0 // Sent messages don't increase unread count
+            };
+          }
+          return conv;
+        });
+
+        // Sort by last message time
+        return updated.sort((a, b) => {
+          const aTime = a.messages[0]?.createdAt || a.createdAt;
+          const bTime = b.messages[0]?.createdAt || b.createdAt;
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+        });
+      });
+    }
+  }, [selectedConversation]);
 
   const handleMessageEdited = useCallback((editedMessage: MessageData) => {
     setMessages(prev => prev.map(msg => 
@@ -258,38 +286,25 @@ export default function ConversationsPage() {
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
-    const otherUser = selectedConversation.userOne.id === user?.id 
-      ? selectedConversation.userTwo 
+    const otherUser = selectedConversation.userOne.id === user?.id
+      ? selectedConversation.userTwo
       : selectedConversation.userOne;
 
-    sendMessage({
-      content: newMessage.trim(),
-      messageType: 'text',
-      receiverId: otherUser.id,
-      replyToMessageId: replyToMessage?.id
-    });
+    try {
+      sendMessage({
+        content: newMessage.trim(),
+        messageType: 'text',
+        receiverId: otherUser.id,
+        replyToMessageId: replyToMessage?.id
+      });
 
-    const tempMessage: MessageData = {
-      id: Date.now(),
-      content: newMessage.trim(),
-      messageType: 'text',
-      senderId: user!.id,
-      conversationId: selectedConversation.id,
-      readAt: null,
-      deliveredAt: null,
-      isEdited: false,
-      isDeleted: false,
-      editedAt: null,
-      deletedAt: null,
-      replyToMessageId: replyToMessage?.id || null,
-      replyToMessage: replyToMessage,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setMessages(prev => [...prev, tempMessage]);
-    setNewMessage('');
-    setReplyToMessage(null);
+      // Clear the input immediately - message will be added when socket confirms
+      setNewMessage('');
+      setReplyToMessage(null);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
   }, [newMessage, selectedConversation, user, sendMessage, replyToMessage]);
 
   const handleEditMessage = useCallback((messageId: number, content: string) => {
@@ -341,7 +356,7 @@ export default function ConversationsPage() {
 
   const startNewConversation = useCallback(async (selectedUser: UserData) => {
     try {
-      const existingConversation = conversations.find(conv => 
+      const existingConversation = conversations.find(conv =>
         (conv.userOne.id === selectedUser.id && conv.userTwo.id === user?.id) ||
         (conv.userOne.id === user?.id && conv.userTwo.id === selectedUser.id)
       );
@@ -350,23 +365,18 @@ export default function ConversationsPage() {
         setSelectedConversation(existingConversation);
         await fetchMessages(existingConversation.id);
       } else {
-        const newConversation: ConversationData = {
-          id: Date.now(),
-          userOneId: user!.id,
-          userTwoId: selectedUser.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          unreadCount: 0,
-          userOne: user as UserData,
-          userTwo: selectedUser,
-          messages: []
-        };
-        
+        // Create conversation on the backend
+        const { data } = await apiClient.post<{ data: ConversationData }>(
+          '/api/conversations',
+          { receiverId: selectedUser.id }
+        );
+
+        const newConversation = data.data;
         setConversations(prev => [newConversation, ...prev]);
         setSelectedConversation(newConversation);
         setMessages([]);
       }
-      
+
       setShowNewChatModal(false);
       setSearchQuery('');
       setSearchResults([]);
@@ -427,25 +437,7 @@ export default function ConversationsPage() {
         replyToMessageId: replyToMessage?.id
       });
 
-      const tempMessage: MessageData = {
-        id: Date.now(),
-        content: imageUrl,
-        messageType: 'image',
-        senderId: user!.id,
-        conversationId: selectedConversation.id,
-        readAt: null,
-        deliveredAt: null,
-        isEdited: false,
-        isDeleted: false,
-        editedAt: null,
-        deletedAt: null,
-        replyToMessageId: replyToMessage?.id || null,
-        replyToMessage: replyToMessage,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, tempMessage]);
+      // Clear reply state - message will be added when socket confirms
       setReplyToMessage(null);
     }
   }, [selectedConversation, user, sendMessage, uploadImage, replyToMessage]);
@@ -500,6 +492,10 @@ export default function ConversationsPage() {
 
   // Socket event listeners
   useEffect(() => {
+    // Add messageSent listener
+    const handleMessageSentEvent = (message: MessageData) => handleMessageSent(message);
+    socket?.on('messageSent', handleMessageSentEvent);
+
     onNewMessage(handleNewMessage);
     onMessageEdited(handleMessageEdited);
     onMessageDeleted(handleMessageDeleted);
@@ -508,6 +504,7 @@ export default function ConversationsPage() {
     onUserStatusChanged(handleUserStatusChanged);
 
     return () => {
+      socket?.off('messageSent', handleMessageSentEvent);
       offNewMessage(handleNewMessage);
       offMessageEdited(handleMessageEdited);
       offMessageDeleted(handleMessageDeleted);
@@ -516,6 +513,7 @@ export default function ConversationsPage() {
       offUserStatusChanged(handleUserStatusChanged);
     };
   }, [
+    socket, handleMessageSent,
     onNewMessage, offNewMessage, handleNewMessage,
     onMessageEdited, offMessageEdited, handleMessageEdited,
     onMessageDeleted, offMessageDeleted, handleMessageDeleted,

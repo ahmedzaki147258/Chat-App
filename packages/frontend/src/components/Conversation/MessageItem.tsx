@@ -4,16 +4,15 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { MessageData } from "@/shared/types/message";
-import { 
-  PencilIcon, 
-  TrashIcon, 
-  ReplyIcon, 
+import {
+  PencilIcon,
+  TrashIcon,
+  ReplyIcon,
   CheckIcon,
-  CheckCheckIcon,
   ClockIcon,
   EllipsisVerticalIcon
 } from "@heroicons/react/24/outline";
-import { CheckCheckIcon as CheckCheckSolidIcon } from "@heroicons/react/24/solid";
+import { CheckBadgeIcon } from "@heroicons/react/24/solid";
 
 interface MessageItemProps {
   message: MessageData;
@@ -85,11 +84,16 @@ export default function MessageItem({
 
   const getMessageStatus = () => {
     if (!isOwnMessage) return null;
-    
+
     if (message.readAt) {
-      return <CheckCheckSolidIcon className="w-4 h-4 text-blue-500" title="Read" />;
+      return <CheckBadgeIcon className="w-4 h-4 text-blue-500" title="Read" />;
     } else if (message.deliveredAt) {
-      return <CheckCheckIcon className="w-4 h-4 text-gray-500" title="Delivered" />;
+      return (
+        <div className="flex" title="Delivered">
+          <CheckIcon className="w-3 h-3 text-gray-500 -mr-1" />
+          <CheckIcon className="w-3 h-3 text-gray-500" />
+        </div>
+      );
     } else {
       return <CheckIcon className="w-4 h-4 text-gray-500" title="Sent" />;
     }

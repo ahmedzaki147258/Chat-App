@@ -266,6 +266,82 @@ export const markMessageAsRead = async (req: Request, res: Response) => {
   }
 };
 
+export const createConversation = async (req: Request, res: Response) => {
+  const userId: number = req.user?.id!;
+  const { receiverId } = req.body;
+
+  if (!receiverId || receiverId === userId) {
+    return res.status(httpStatus.BAD_REQUEST).json({
+      status: "error",
+      message: "Valid receiver ID is required"
+    });
+  }
+
+  try {
+    // Check if conversation already exists
+    const existingConversation = await Conversation.findOne({
+      where: {
+        [Op.or]: [
+          { userOneId: userId, userTwoId: receiverId },
+          { userOneId: receiverId, userTwoId: userId }
+        ]
+      },
+      include: [
+        {
+          model: User,
+          as: "userOne",
+          attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+        },
+        {
+          model: User,
+          as: "userTwo",
+          attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+        }
+      ]
+    });
+
+    if (existingConversation) {
+      return res.status(httpStatus.OK).json({ status: "success", data: existingConversation });
+    }
+
+    // Verify receiver exists
+    const receiver = await User.findByPk(receiverId);
+    if (!receiver) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        status: "error",
+        message: "Receiver not found"
+      });
+    }
+
+    // Create new conversation
+    const conversation = await Conversation.create({
+      userOneId: userId,
+      userTwoId: receiverId
+    });
+
+    // Load conversation with user details
+    const fullConversation = await Conversation.findByPk(conversation.id, {
+      include: [
+        {
+          model: User,
+          as: "userOne",
+          attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+        },
+        {
+          model: User,
+          as: "userTwo",
+          attributes: ['id', 'name', 'email', 'imageUrl', 'isOnline', 'lastSeen']
+        }
+      ]
+    });
+
+    res.status(httpStatus.CREATED).json({ status: "success", data: fullConversation });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
+  }
+};
+
 export const uploadImage = (req: Request, res: Response) => {
   try {
     res.status(httpStatus.OK).json({ status: "success", data: req.file?.path });

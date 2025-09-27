@@ -21,15 +21,23 @@ module.exports = {
       defaultValue: 0
     });
 
+    await queryInterface.addColumn('conversations', 'unreadCount', {
+      type: Sequelize.INTEGER.UNSIGNED,
+      allowNull: false,
+      defaultValue: 0
+    });
+
     // Add indexes for better performance
     await queryInterface.addIndex('conversations', ['lastMessageAt']);
     await queryInterface.addIndex('conversations', ['userOneUnreadCount']);
     await queryInterface.addIndex('conversations', ['userTwoUnreadCount']);
+    await queryInterface.addIndex('conversations', ['unreadCount']);
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.removeColumn('conversations', 'lastMessageAt');
     await queryInterface.removeColumn('conversations', 'userOneUnreadCount');
     await queryInterface.removeColumn('conversations', 'userTwoUnreadCount');
+    await queryInterface.removeColumn('conversations', 'unreadCount');
   }
 };

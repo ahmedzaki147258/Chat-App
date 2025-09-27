@@ -1,8 +1,9 @@
 import express from "express";
 import { authenticateAccessToken, handleImageUpload } from "src/middlewares";
-import { 
-  getConversationsWithLastMessage, 
-  getMessagesByConversationId, 
+import {
+  getConversationsWithLastMessage,
+  getMessagesByConversationId,
+  createConversation,
   uploadImage,
   editMessage,
   deleteMessage,
@@ -13,6 +14,7 @@ const router: express.Router = express.Router();
 
 // Conversation routes
 router.get("/", authenticateAccessToken, getConversationsWithLastMessage);
+router.post("/", authenticateAccessToken, createConversation);
 router.get("/:id/messages", authenticateAccessToken, getMessagesByConversationId);
 
 // Message operations
