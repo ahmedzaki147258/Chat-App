@@ -4,10 +4,10 @@ import { Server } from "socket.io";
 import initSocket from "./sockets";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
-import passport from "./config/passport";
-import { connectDB } from "./config/database";
-import { formatDate } from "@/shared/utils/format";
+import passport from "./config/passport.config";
+import { connectDB } from "./config/database.config";
 import { setSocketServer } from "./utils/socket";
+import { formatDate } from "@/shared/utils/format";
 import express, { Request, Response } from "express";
 import { authRoutes, userRoutes, chatRoutes } from "./routes";
 

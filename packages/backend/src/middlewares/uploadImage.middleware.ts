@@ -3,7 +3,7 @@ import { Multer } from "multer";
 import httpStatus from "http-status";
 import { v2 as cloudinary } from "cloudinary";
 import { NextFunction, Request, Response } from "express";
-import { uploadUserImage, uploadMessageImage } from "src/config/cloudinary";
+import { uploadUserImage, uploadMessageImage } from "src/config/cloudinary.config";
 
 export const handleImageUpload = (model: "user" | "message") => async (req: Request, res: Response, next: NextFunction) => {
   switch (model) {

@@ -1,5 +1,5 @@
+import { sequelize } from "../../config/database.config";
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from "sequelize";
-import { sequelize } from "../../config/database";
 
 export class Conversation extends Model<InferAttributes<Conversation>, InferCreationAttributes<Conversation>> {
   declare id: CreationOptional<number>;

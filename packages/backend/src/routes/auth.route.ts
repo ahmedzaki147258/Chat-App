@@ -1,5 +1,5 @@
 import express from "express";
-import passport from "../config/passport";
+import passport from "../config/passport.config";
 import { authenticateAccessToken, authenticateRefreshToken } from "src/middlewares";
 import { getCurrentUser, googleCallback, googleFailure, loginUser, logoutUser, refreshToken, registerUser } from "src/controllers/auth.controller";
 

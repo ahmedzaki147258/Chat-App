@@ -6,9 +6,10 @@ A full-stack monorepo built with PNPM workspaces, featuring a NextJS frontend, E
 
 ```
 chat-app/
+├── bruno/               # Bruno collection for API testing
 ├── packages/
-│   ├── backend/          # Express TypeScript API server
-│   └── frontend/         # NextJS React application
+│   ├── backend/         # Express TypeScript API server
+│   └── frontend/        # NextJS React application
 ├── shared/
 │   ├── types/           # Shared TypeScript interfaces
 │   └── utils/           # Shared utility functions
@@ -50,6 +51,15 @@ npm install -g pnpm
    nano packages/backend/.env
    ```
 
+4. **Create .env.local for frontend**
+   ```bash
+   # create the environment file
+   touch packages/frontend/.env.local
+   
+   # Edit the .env.local file with your configuration
+   nano packages/frontend/.env.local
+   ```
+
 ## 🎯 Running the Project
 
 ### Development Mode
@@ -73,28 +83,14 @@ pnpm start:frontend
 # Runs on http://localhost:3000
 ```
 
-### Production Mode
-
-#### Build all packages:
-```bash
-pnpm build
-```
-
-#### Start production backend:
-```bash
-pnpm --filter backend start
-```
-
 ## 📦 Available Scripts
 
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Start both frontend and backend in development mode |
 | `pnpm build` | Build all packages for production |
-| `pnpm start:backend` | Start backend development server |
-| `pnpm start:frontend` | Start frontend development server |
-| `pnpm --filter backend dev` | Start only backend with nodemon |
-| `pnpm --filter frontend dev` | Start only frontend with NextJS dev server |
+| `pnpm start:backend` | Start only backend with nodemon |
+| `pnpm start:frontend` | Start only frontend with NextJS dev server |
 
 ## 🔗 API Endpoints
 
@@ -202,10 +198,45 @@ pnpm install
 
 ## 📝 Environment Variables
 
+
+### Frontend Environment Variables
+
+Create `packages/frontend/.env.local` with:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
 ### Backend Environment Variables
 
 Create `packages/backend/.env` with:
 
 ```env
 PORT=4000
+NODE_ENV=development
+
+# JWT Configuration
+ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
+
+# Database Configuration
+DB_NAME=chat_app
+DB_USER=root
+DB_PASSWORD=
+DB_PORT=3306
+DB_HOST=localhost
+DB_DIALECT=mysql
+
+# Cloudinary Configuration
+CLOUD_NAME=
+CLOUD_API_KEY=
+CLOUD_API_SECRET=
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Application URLs
+CLIENT_URL=http://localhost:3000
+SERVER_URL=http://localhost:4000
 ```

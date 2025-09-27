@@ -23,7 +23,7 @@ passport.use(
             email: profile.emails![0].value,
             googleId: profile.id,
             authProvider: "google",
-            imageUrl: profile?.photos?.[0].value || null,
+            imageUrl: profile?.photos?.[0].value.replace(/=s\d+-c/, '=s256-c') || null,
           });
         }
         return done(null, user);

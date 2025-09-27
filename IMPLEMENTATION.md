@@ -119,55 +119,115 @@
 
 ## 🛠 Technical Architecture
 
-### Database Schema
-```sql
--- Users table enhancements
-ALTER TABLE users ADD COLUMN lastSeen DATE;
-ALTER TABLE users ADD COLUMN isOnline BOOLEAN DEFAULT false;
-
--- Messages table (complete)
-messages:
-  - id, content, messageType, conversationId, senderId
-  - readAt, deliveredAt, isEdited, isDeleted
-  - editedAt, deletedAt, replyToMessageId
-  - createdAt, updatedAt
-
--- Conversations table enhancements
-ALTER TABLE conversations ADD COLUMN lastMessageAt DATE;
-ALTER TABLE conversations ADD COLUMN userOneUnreadCount INT DEFAULT 0;
-ALTER TABLE conversations ADD COLUMN userTwoUnreadCount INT DEFAULT 0;
-```
-
 ### Backend Structure
 ```
 packages/backend/src/
+├── config/
+│   ├── cloudinary.config.ts        # Cloudinary configuration
+│   ├── database.config.ts          # Database configuration
+│   └── passport.config.ts          # Passport configuration
 ├── controllers/
-│   └── chat.controller.ts     # Enhanced with edit/delete/read endpoints
-├── models/
-│   ├── User.ts               # Online status tracking
-│   ├── Message.ts            # Complete message features
-│   └── Conversation.ts       # Unread count tracking
+│   ├── auth.controller.ts          # Enhanced with refresh token rotation
+│   ├── chat.controller.ts          # Enhanced with edit/delete/read endpoints
+│   └── user.controller.ts          # User management functionality
+├── db/
+│   ├── index.ts                    # Database connection setup
+│   ├── migration/                  # Database migrations
+│   │   ├── 20250920234103-create-users.js
+│   │   ├── 20250920234503-create-conversations.js
+│   │   └── 20250920234535-create-messages.js
+│   ├── models/                     # Sequelize models
+│   │   ├── Conversation.ts
+│   │   ├── Message.ts
+│   │   ├── User.ts
+│   │   └── relations.ts
+│   └── seeders/                    # Database seeders
+│       └── 20250921001710-users-seeder.js
+├── middlewares/                    # Express middlewares
+│   ├── authenticateAccessToken.middleware.ts
+│   ├── authenticateRefreshToken.middleware.ts
+│   ├── index.ts
+│   ├── socket.middleware.ts
+│   └── uploadImage.middleware.ts   # Image upload handling
+├── routes/
+│   ├── auth.route.ts               # Authentication routes
+│   ├── chat.route.ts               # New message operation routes
+│   ├── index.ts                    # Route exports
+│   └── user.route.ts               # User management routes
 ├── sockets/
-│   └── chat.socket.ts        # Comprehensive socket handling
-└── routes/
-    └── chat.route.ts         # New message operation routes
+│   ├── chat.socket.ts              # Comprehensive socket handling
+│   ├── index.ts                    # Socket initialization
+│   └── socketUserMap.ts            # User-socket mapping
+├── types/
+│   ├── express.d.ts                # Express type extensions
+│   └── socket.d.ts                 # Socket.io type extensions
+└── utils/
+    ├── auth.ts                     # Authentication helpers
+    ├── jwt.ts                      # JWT token management
+    └── socket.ts                   # Socket utility functions
 ```
 
 ### Frontend Structure
 ```
 packages/frontend/src/
+├── app/
+│   ├── conversations/                  # Chat interface
+│   │   └── page.tsx                    # Main chat page
+│   ├── favicon.ico                     # Site favicon
+│   ├── globals.css                     # Global styles
+│   ├── layout.tsx                      # Root layout with providers
+│   ├── not-found.tsx                   # 404 page
+│   └── page.tsx                        # Home/landing page
+├── components/
+│   ├── Auth/                           # Authentication components
+│   │   ├── AuthModal.tsx               # Login/register modal
+│   │   └── LogoutConfirm.tsx           # Logout confirmation
+│   ├── Conversation/                   # Chat components
+│   │   ├── ChatHeader.tsx              # Typing indicator
+│   │   ├── ConversationSidebar.tsx     # Unread badges + status
+│   │   ├── ImagePreviewModal.tsx       # Image preview
+│   │   ├── LoadingScreen.tsx           # Loading state
+│   │   ├── MessageInput.tsx            # Reply + typing support
+│   │   ├── MessageItem.tsx             # Full-featured message component
+│   │   ├── MessagesContainer.tsx       # Read receipt automation
+│   │   ├── NewMessagesIndicator.tsx    # New message notification
+│   │   ├── TypingIndicator.tsx         # Animated typing dots
+│   │   ├── UserSearchModal.tsx         # User search for new chats
+│   │   ├── UserStatus.tsx              # Online/offline display
+│   │   └── WelcomeScreen.tsx           # Initial chat screen
+│   ├── Header.tsx                      # Navigation header
+│   ├── Hero.tsx                        # Landing page hero section
+│   ├── ProfileModal.tsx                # User profile editor
+│   ├── QueryClientProviderWrapper.tsx  # React Query provider
+│   └── ThemeToggle.tsx                 # Theme switching component
 ├── hooks/
-│   └── useSocket.ts          # Complete socket event handling
-├── components/Conversation/
-│   ├── MessageItem.tsx       # Full-featured message component
-│   ├── MessageInput.tsx      # Reply + typing support
-│   ├── MessagesContainer.tsx # Read receipt automation
-│   ├── ConversationSidebar.tsx # Unread badges + status
-│   ├── ChatHeader.tsx        # Typing indicator
-│   ├── TypingIndicator.tsx   # Animated typing dots
-│   └── UserStatus.tsx        # Online/offline display
+│   ├── useAuth.ts                  # Authentication logic
+│   └── useSocket.ts                # Complete socket event handling
+├── lib/
+│   ├── axios.ts                    # API client setup
+│   └── validations.ts              # Zod schemas
 └── types/
-    └── message.ts            # Complete type definitions
+    └── index.ts                    # Type exports
+```
+
+## Shared Packages
+
+- **types/**: Shared TypeScript interfaces
+```
+shared/types/src/
+├── api.ts                          # API response types
+├── image.ts                        # Image-related types
+├── message.ts                      # Message types
+└── user.ts                         # User types
+```
+
+- **utils/**: Shared utility functions
+```
+shared/utils/src/
+├── add.ts                          # Utility functions
+├── format.ts                       # Formatting utilities
+├── index.ts                        # Exports
+└── validation.ts                   # Validation helpers
 ```
 
 ## 🚀 Performance Optimizations
@@ -206,21 +266,8 @@ packages/frontend/src/
 - **Red badge**: Unread message count
 - **Check marks**: Message delivery status
 
-## 🔧 Configuration
 
-### Environment Variables
-```env
-# Backend
-DATABASE_URL=mysql://user:pass@localhost:3306/chatapp
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
-
-# Frontend
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-### Socket Configuration
+## 🔧 Socket Configuration
 - **Heartbeat Interval**: 30 seconds
 - **Offline Threshold**: 60 seconds (2 missed heartbeats)
 - **Typing Timeout**: 3 seconds of inactivity

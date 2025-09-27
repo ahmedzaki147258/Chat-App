@@ -1,11 +1,8 @@
 import bcrypt from "bcryptjs";
-import { sequelize } from "../../config/database";
+import { sequelize } from "../../config/database.config";
 import { DataTypes, Model, CreationOptional, InferAttributes, InferCreationAttributes } from "sequelize";
 
-export class User extends Model<
-  InferAttributes<User>,
-  InferCreationAttributes<User>
-> {
+export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<number>;
   declare name: string;
   declare email: string;
