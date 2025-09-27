@@ -1,0 +1,89 @@
+Core Requirements:
+------------------
+1. Real-time Online/Offline Status & Last Seen
+-Implement heartbeat system to track user online status
+
+-Update last seen timestamp when user goes offline
+
+-Broadcast status changes to relevant contacts in real-time
+
+-Show accurate "online", "offline" or "last seen at [time]" status
+
+2. Message Editing & Deletion
+-Allow message editing within a time window (e.g., 15 minutes)
+
+-Soft delete messages (mark as deleted rather than permanent removal)
+
+-Show "Edited" indicator for modified messages
+
+-Show "This message was deleted" for deleted messages
+
+-Prevent deleted messages from displaying original content
+
+3. Message Reply Feature
+-Implement message swiping/right-click to reply functionality
+
+-Display quoted message in reply composer
+
+-Show contextual reply preview in chat bubbles
+
+-Maintain reply reference even if original message is deleted
+
+4. Message Read Receipts
+-Implement three-state read status system:
+
+-Single gray check: Message sent
+
+-Double gray checks: Message delivered (recipient online)
+
+-Double blue checks: Message read (recipient viewed)
+
+-Track message visibility in chat viewport
+
+-Update status in real-time across devices
+
+5. Conversation Sorting & Notification Badges
+-Auto-promote conversations with new messages to top
+
+-Show unread message count badges
+
+-Implement intelligent sorting (time + unread priority)
+
+-Reset badges when conversation is opened
+
+-Maintain read/unread state across devices
+
+==========================================================================
+Socket Events to Implement:
+---------------------------
+-`user-online` / `user-offline` events
+
+-`message-edit` / `message-delete` events
+
+-`message-read` events
+
+-`typing-indicator` events
+
+-`message-reply` events
+
+==========================================================================
+Additional Features to Consider:
+--------------------------------
+-Typing Indicators - Show when contacts are typing
+
+-Message Delivery Reports - Track delivered status
+
+-Message Reactions - Emoji reactions to messages
+
+-Message Search - Search through conversation history
+
+==========================================================================
+UI/UX Considerations:
+---------------------
+-Smooth animations for message actions
+
+-Context menus for message options
+
+-Swipe gestures for reply/delete
+
+-Real-time status updates without page refresh

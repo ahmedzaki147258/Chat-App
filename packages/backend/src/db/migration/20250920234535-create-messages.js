@@ -57,6 +57,38 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW
+      },
+      deliveredAt: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      isEdited: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      isDeleted: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      editedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      replyToMessageId: {
+        type: Sequelize.BIGINT.UNSIGNED,
+        allowNull: true,
+        references: {
+          model: 'messages',
+          key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       }
     });
 
