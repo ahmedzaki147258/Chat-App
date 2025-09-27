@@ -34,7 +34,7 @@ export default function ConversationSidebar({
   };
 
   const getLastMessagePreview = (conversation: ConversationData) => {
-    const lastMessage = conversation.messages[0];
+    const lastMessage = conversation.messages?.[0] ?? null;
     if (!lastMessage) return 'Start a conversation';
     
     if (lastMessage.isDeleted) return 'This message was deleted';
@@ -86,7 +86,7 @@ export default function ConversationSidebar({
         ) : (
           conversations.map((conversation) => {
             const otherUser = getOtherUser(conversation);
-            const lastMessage = conversation.messages[0];
+            const lastMessage = conversation.messages?.[0] ?? null;
             const unreadCount = conversation.unreadCount || 0;
             const isSelected = selectedConversation?.id === conversation.id;
             
