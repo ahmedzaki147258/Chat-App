@@ -3,7 +3,7 @@
 A full-stack monorepo built with PNPM workspaces, featuring a NextJS frontend, Express TypeScript backend, and shared packages for types and utilities.
 
 ## 🎞️ Project Demo
-
+[![Demo](https://res.cloudinary.com/dgkh88cux/image/upload/v1759021346/ChatApp/demo/demo.png)](https://res.cloudinary.com/dgkh88cux/video/upload/v1759021519/ChatApp/demo/demo_iilsaz.mp4)
 
 ## 🏗️ Project Structure
 
