@@ -3,7 +3,7 @@
 A full-stack monorepo built with PNPM workspaces, featuring a NextJS frontend, Express TypeScript backend, and shared packages for types and utilities.
 
 ## 🎞️ Project Demo
-<video src="demo.mp4" controls width="100%"></video>
+
 
 ## 🏗️ Project Structure
 
