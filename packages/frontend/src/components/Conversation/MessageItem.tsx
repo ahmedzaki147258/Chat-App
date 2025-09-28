@@ -210,7 +210,7 @@ export default function MessageItem({
             onReplyToMessage(message);
             setShowContextMenu(false);
           }}
-          className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-sm"
+          className="w-full px-3 py-2 text-left hover:bg-base-200 dark:hover:bg-base-300 flex items-center gap-2 text-sm rounded-lg"
         >
           <ArrowUturnLeftIcon className="w-4 h-4" />
           Reply
