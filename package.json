@@ -6,7 +6,7 @@
     "dev": "pnpm run --parallel dev",
     "build": "pnpm run --recursive build",
     "start:backend": "pnpm --filter backend dev",
-    "start:frontend": "pnpm --filter frontend dev --port 3000"
+    "start:frontend": "pnpm --filter frontend dev --port 9000"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
