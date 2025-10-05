@@ -3,13 +3,14 @@ import httpStatus from "http-status";
 import { Request, Response } from "express";
 import { sendAuthTokens } from "src/utils/auth";
 import { generateAccessToken } from "src/utils/jwt";
+import { UniqueConstraintError } from "sequelize";
 
 export const loginUser = async (req: Request, res: Response) => {
 	try {
 		const { email, password } = req.body;
 		const user: User | null = await User.unscoped().findOne({ where: { email } });
 		if (!user || !(await user.validatePassword(password))) {
-			return res.status(httpStatus.UNAUTHORIZED).json({ status: "error", message: "Invalid email or password" });
+			return res.status(httpStatus.BAD_REQUEST).json({ status: "error", message: "Invalid email or password" });
 		}
 
 		await sendAuthTokens(res, user);
@@ -25,8 +26,19 @@ export const registerUser = async (req: Request, res: Response) => {
 		const user = await User.create(req.body);
     res.status(httpStatus.CREATED).json({ status: "success", data: user.toJSON() });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message });
+    let statusCode: number;
+    let message: string;
+    if (error instanceof UniqueConstraintError) {
+      statusCode = httpStatus.BAD_REQUEST;
+      message = error.errors[0]?.message || "Unique constraint violated";
+    } else if (error instanceof Error) {
+      statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+      message = error.message;
+    } else {
+      statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+      message = String(error);
+    }
+    return res.status(statusCode).json({ status: "error", message });
   }
 };
 

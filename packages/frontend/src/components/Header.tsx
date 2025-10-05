@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -110,7 +111,7 @@ export default function Header() {
                   <div className="avatar">
                     <div className="w-8 h-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
                       {user?.imageUrl ? (
-                        <img
+                        <Image
                           src={user.imageUrl}
                           alt={user.name}
                           className="w-8 h-8 rounded-full object-cover"

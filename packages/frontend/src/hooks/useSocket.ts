@@ -1,5 +1,4 @@
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/axios';
 import { io, Socket } from 'socket.io-client';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {

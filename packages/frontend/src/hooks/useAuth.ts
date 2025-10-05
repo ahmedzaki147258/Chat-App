@@ -28,7 +28,7 @@ export function useAuth() {
 
 
   // Get current user
-  const { data: user, isLoading, error } = useQuery<UserData | null>({
+  const { data: user, isLoading } = useQuery<UserData | null>({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async (): Promise<UserData | null> => {
       try {
@@ -85,7 +85,7 @@ export function useAuth() {
       const { data: res } = await apiClient.post<ApiResponse<UserData>>('/api/auth/register', userData);
       return res.data!;
     },
-    onSuccess: (user) => {
+    onSuccess: () => {
       toast.success(`Registration successful, please login to continue`);
     },
     onError: (error: Error) => {

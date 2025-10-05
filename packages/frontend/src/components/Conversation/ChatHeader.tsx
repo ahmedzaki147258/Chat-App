@@ -12,8 +12,7 @@ interface ChatHeaderProps {
 
 export default function ChatHeader({ 
   otherUser, 
-  isTyping = false,
-  formatTime 
+  isTyping = false 
 }: ChatHeaderProps) {
   return (
     <div className="p-4 bg-base-200 border-b border-base-300 flex items-center gap-3">

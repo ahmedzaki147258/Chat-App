@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -141,9 +142,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   whileTap={{ scale: 0.95 }}
                 >
                   {displayImageUrl ? (
-                    <img
+                    <Image
                       src={displayImageUrl}
-                      alt={user?.name}
+                      alt={user?.name || 'User'}
                       className="w-full h-full object-cover"
                     />
                   ) : (

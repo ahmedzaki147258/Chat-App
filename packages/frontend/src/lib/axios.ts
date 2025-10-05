@@ -83,6 +83,10 @@ apiClient.interceptors.response.use(
       }
     }
 
+    if (error.response?.data) {
+      return Promise.reject(error.response.data);
+    }
+
     return Promise.reject(error);
   }
 );

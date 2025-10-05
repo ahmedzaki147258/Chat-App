@@ -50,6 +50,9 @@ importers:
       mysql2:
         specifier: ^3.14.3
         version: 3.14.3
+      next:
+        specifier: 15.5.2
+        version: 15.5.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       passport:
         specifier: ^0.7.0
         version: 0.7.0

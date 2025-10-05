@@ -9,7 +9,6 @@ import {
   TrashIcon,
   ArrowUturnLeftIcon,
   CheckIcon,
-  ClockIcon,
   EllipsisVerticalIcon
 } from "@heroicons/react/24/outline";
 import { CheckBadgeIcon } from "@heroicons/react/24/solid";
@@ -28,7 +27,6 @@ interface MessageItemProps {
 export default function MessageItem({ 
   message, 
   isOwnMessage,
-  currentUserId,
   onImageClick, 
   onEditMessage,
   onDeleteMessage,
