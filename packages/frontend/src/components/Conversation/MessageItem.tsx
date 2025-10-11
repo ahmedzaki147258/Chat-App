@@ -148,14 +148,14 @@ export default function MessageItem({
           <div className="flex gap-2">
             <button
               onClick={handleEditSubmit}
-              className="px-3 py-1 bg-primary text-primary-content rounded text-sm hover:bg-primary/80"
+              className="px-2.5 md:px-3 py-1 bg-primary text-primary-content rounded text-xs md:text-sm hover:bg-primary/80"
               disabled={!editContent.trim()}
             >
               Save
             </button>
             <button
               onClick={handleEditCancel}
-              className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+              className="px-2.5 md:px-3 py-1 bg-gray-500 text-white rounded text-xs md:text-sm hover:bg-gray-600"
             >
               Cancel
             </button>
@@ -186,9 +186,9 @@ export default function MessageItem({
       <div className="space-y-2">
         {renderReplyPreview()}
         <div>
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <p className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</p>
           {message.isEdited && (
-            <span className="text-xs opacity-60 ml-2">(edited)</span>
+            <span className="text-[10px] md:text-xs opacity-60 ml-2">(edited)</span>
           )}
         </div>
       </div>
@@ -201,16 +201,16 @@ export default function MessageItem({
     return (
       <div 
         ref={contextMenuRef}
-        className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50 min-w-[120px]"
+        className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50 min-w-[110px] md:min-w-[120px]"
       >
         <button
           onClick={() => {
             onReplyToMessage(message);
             setShowContextMenu(false);
           }}
-          className="w-full px-3 py-2 text-left hover:bg-base-200 dark:hover:bg-base-300 flex items-center gap-2 text-sm rounded-lg"
+          className="w-full px-2.5 md:px-3 py-1.5 md:py-2 text-left hover:bg-base-200 dark:hover:bg-base-300 flex items-center gap-2 text-xs md:text-sm rounded-lg"
         >
-          <ArrowUturnLeftIcon className="w-4 h-4" />
+          <ArrowUturnLeftIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
           Reply
         </button>
         
@@ -220,9 +220,9 @@ export default function MessageItem({
               setIsEditing(true);
               setShowContextMenu(false);
             }}
-            className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-sm"
+            className="w-full px-2.5 md:px-3 py-1.5 md:py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-xs md:text-sm"
           >
-            <PencilIcon className="w-4 h-4" />
+            <PencilIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Edit
           </button>
         )}
@@ -233,9 +233,9 @@ export default function MessageItem({
               onDeleteMessage(message.id);
               setShowContextMenu(false);
             }}
-            className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-red-600"
+            className="w-full px-2.5 md:px-3 py-1.5 md:py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-xs md:text-sm text-red-600"
           >
-            <TrashIcon className="w-4 h-4" />
+            <TrashIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Delete
           </button>
         )}
@@ -249,7 +249,7 @@ export default function MessageItem({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative ${
+      <div className={`max-w-[85%] md:max-w-xs lg:max-w-md px-3 md:px-4 py-2 rounded-lg relative ${
         isOwnMessage 
           ? 'bg-primary text-primary-content' 
           : 'bg-base-300 text-base-content'
@@ -257,17 +257,18 @@ export default function MessageItem({
         {/* Context menu button */}
         <button
           onClick={() => setShowContextMenu(!showContextMenu)}
-          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1"
+          className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1 md:p-1.5"
           title="Message options"
+          aria-label="Message options"
         >
-          <EllipsisVerticalIcon className="w-4 h-4" />
+          <EllipsisVerticalIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
         </button>
 
         {renderContextMenu()}
         
         {/* Sender info for received messages */}
         {!isOwnMessage && message.sender && (
-          <div className="text-xs font-medium mb-1 opacity-80">
+          <div className="text-[10px] md:text-xs font-medium mb-1 opacity-80">
             {message.sender.name}
           </div>
         )}
@@ -275,13 +276,13 @@ export default function MessageItem({
         {renderMessageContent()}
         
         {/* Message footer with time and status */}
-        <div className={`flex items-center justify-between mt-2 text-xs opacity-70 ${
+        <div className={`flex items-center justify-between mt-1.5 md:mt-2 text-[10px] md:text-xs opacity-70 ${
           isEditing ? 'hidden' : ''
         }`}>
           <div className="flex items-center gap-1">
             <span>{formatTime(message.createdAt)}</span>
             {message.editedAt && (
-              <span className="text-xs opacity-60">(edited)</span>
+              <span className="text-[10px] md:text-xs opacity-60">(edited)</span>
             )}
           </div>
           <div className="flex items-center gap-1">

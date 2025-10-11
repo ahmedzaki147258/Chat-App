@@ -12,6 +12,7 @@ interface ConversationSidebarProps {
   isLoadingConversations: boolean;
   isConnected: boolean;
   user: UserData | null;
+  isMobileVisible: boolean;
   onSelectConversation: (conversation: ConversationData) => void;
   onNewConversation: () => void;
   onBackToConversations: () => void;
@@ -24,6 +25,7 @@ export default function ConversationSidebar({
   isLoadingConversations,
   isConnected,
   user,
+  isMobileVisible,
   onSelectConversation,
   onNewConversation,
   onBackToConversations,
@@ -44,11 +46,11 @@ export default function ConversationSidebar({
   };
 
   return (
-    <div className="w-80 bg-base-200 border-r border-base-300 flex flex-col">
+    <div className={`w-full md:w-80 bg-base-200 border-r border-base-300 flex flex-col ${isMobileVisible ? 'block' : 'hidden'} md:block absolute md:relative inset-0 md:inset-auto z-20 md:z-auto`}>
       {/* Header */}
-      <div className="p-4 border-b border-base-300">
+      <div className="p-3 md:p-4 border-b border-base-300">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-base-content cursor-pointer"
+          <h1 className="text-lg md:text-xl font-bold text-base-content cursor-pointer"
             onClick={() => onBackToConversations()}>
             Conversations
           </h1>
@@ -56,8 +58,9 @@ export default function ConversationSidebar({
             className="btn btn-primary btn-sm"
             onClick={onNewConversation}
             title="Start new conversation"
+            aria-label="Start new conversation"
           >
-            <span className="text-lg">➕</span>
+            <span className="text-base md:text-lg">➕</span>
           </button>
         </div>
         
@@ -93,27 +96,27 @@ export default function ConversationSidebar({
             return (
               <motion.div
                 key={conversation.id}
-                className={`relative p-4 cursor-pointer border-b border-base-300 hover:bg-base-300 transition-colors ${
+                className={`relative p-3 md:p-4 cursor-pointer border-b border-base-300 hover:bg-base-300 transition-colors ${
                   isSelected ? 'bg-base-300 border-l-4 border-l-primary' : ''
                 }`}
                 onClick={() => onSelectConversation(conversation)}
                 whileHover={{ x: 4 }}
                 layout
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   <div className="relative flex-shrink-0">
                     <div className="avatar">
-                      <div className="w-12 rounded-full">
+                      <div className="w-10 md:w-12 rounded-full">
                         {otherUser.imageUrl ? (
                           <Image 
                             src={otherUser.imageUrl} 
                             alt={otherUser.name}
                             width={48}
                             height={48}
-                            className="rounded-full object-cover"
+                            className="rounded-full object-cover w-10 h-10 md:w-12 md:h-12"
                           />
                         ) : (
-                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white font-bold">
+                          <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary text-white font-bold text-sm md:text-base">
                             {otherUser.name.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -134,19 +137,19 @@ export default function ConversationSidebar({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-1">
-                      <h3 className={`font-medium truncate ${
+                      <h3 className={`text-sm md:text-base font-medium truncate ${
                         unreadCount > 0 && !isSelected ? 'text-base-content' : 'text-base-content'
                       }`}>
                         {otherUser.name}
                       </h3>
-                      <span className="text-xs text-base-content/50 flex-shrink-0 ml-2">
+                      <span className="text-[10px] md:text-xs text-base-content/50 flex-shrink-0 ml-2">
                         {lastMessage ? formatTime(lastMessage.createdAt) : ''}
                       </span>
                     </div>
                     
                     {/* Last message preview */}
                     <div className="flex items-center justify-between">
-                      <p className={`text-sm truncate ${
+                      <p className={`text-xs md:text-sm truncate ${
                         unreadCount > 0 && !isSelected 
                           ? 'text-base-content font-medium' 
                           : 'text-base-content/70'

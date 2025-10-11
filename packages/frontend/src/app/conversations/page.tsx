@@ -64,11 +64,11 @@ export default function ConversationsPage() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
-  const [showNewMessagesIndicator, setShowNewMessagesIndicator] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<number, UserData>>(new Map());
   const [userStatuses, setUserStatuses] = useState<Map<number, UserData>>(new Map());
+  const [isMobileSidebarVisible, setIsMobileSidebarVisible] = useState(true);
 
   // Refs
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +92,6 @@ export default function ConversationsPage() {
   
     if (isAtBottom) {
       setNewMessagesCount(0);
-      setShowNewMessagesIndicator(false);
     }
   }, []);
 
@@ -164,7 +163,6 @@ export default function ConversationsPage() {
 
       if (!isAtBottom) {
         setNewMessagesCount(prev => prev + 1);
-        setShowNewMessagesIndicator(true);
       }
     }
 
@@ -477,6 +475,22 @@ export default function ConversationsPage() {
     return conversation.userOne.id === user?.id ? conversation.userTwo : conversation.userOne;
   }, [user]);
 
+  // ==================== UI HANDLERS ====================
+
+  const handleBackToWelcomeConversations = useCallback(() => {
+    setSelectedConversation(null);
+    setReplyToMessage(null);
+    setTypingUsers(new Map());
+    setIsMobileSidebarVisible(true);
+  }, []);
+
+  const handleSelectConversation = useCallback((conversation: ConversationData) => {
+    setSelectedConversation(conversation);
+    fetchMessages(conversation.id);
+    // Hide sidebar on mobile when conversation is selected
+    setIsMobileSidebarVisible(false);
+  }, [fetchMessages]);
+
   // ==================== EFFECTS ====================
 
   useEffect(() => {
@@ -491,7 +505,6 @@ export default function ConversationsPage() {
         scrollToBottom();
         setIsAtBottom(true);
         setNewMessagesCount(0);
-        setShowNewMessagesIndicator(false);
         setTypingUsers(new Map()); // Clear typing indicators when switching conversations
       }, 100);
     }
@@ -581,14 +594,8 @@ export default function ConversationsPage() {
     return null;
   }
 
-  const handleBackToWelcomeConversations = () => {
-    setSelectedConversation(null);
-    setReplyToMessage(null);
-    setTypingUsers(new Map());
-  };
-
   return (
-    <div className="h-[calc(100vh-64px)] bg-base-100 flex overflow-hidden">
+    <div className="h-[calc(100vh-64px)] bg-base-100 flex overflow-hidden relative">
       {/* Left Sidebar */}
       <ConversationSidebar
         conversations={conversations}
@@ -596,23 +603,23 @@ export default function ConversationsPage() {
         isLoadingConversations={isLoadingConversations}
         isConnected={isConnected}
         user={user ?? null}
-        onSelectConversation={(conversation) => {
-          setSelectedConversation(conversation);
-          fetchMessages(conversation.id);
-        }}
+        isMobileVisible={isMobileSidebarVisible}
+        onSelectConversation={handleSelectConversation}
         onBackToConversations={handleBackToWelcomeConversations}
         onNewConversation={() => setShowNewChatModal(true)}
         formatTime={formatTime}
       />
 
       {/* Right Side - Chat Area */}
-      <div className="flex-1 flex flex-col relative">
+      <div className={`flex-1 flex flex-col relative ${isMobileSidebarVisible ? 'hidden md:flex' : 'flex'}`}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
             <ChatHeader
               otherUser={getOtherUser(selectedConversation)}
               isTyping={typingUsers.has(getOtherUser(selectedConversation).id)}
+              showBackButton={true}
+              onBackClick={handleBackToWelcomeConversations}
               formatTime={formatTime}
             />
 

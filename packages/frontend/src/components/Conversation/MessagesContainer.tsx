@@ -91,7 +91,7 @@ const MessagesContainer = forwardRef<HTMLDivElement, MessagesContainerProps>(
     return (
       <div
         ref={ref}
-        className="h-full overflow-y-auto p-4 space-y-4"
+        className="h-full overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-4"
         onScroll={onScroll}
       >
         {messages.map((message) => (

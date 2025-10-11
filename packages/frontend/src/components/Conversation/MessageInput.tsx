@@ -140,8 +140,8 @@ export default function MessageInput({
     <div className="bg-base-200 border-t border-base-300">
       {renderReplyPreview()}
       
-      <div className="p-4">
-        <div className="flex gap-2 items-end">
+      <div className="p-2 md:p-4">
+        <div className="flex gap-1.5 md:gap-2 items-end">
           <input
             ref={fileInputRef}
             type="file"
@@ -151,22 +151,23 @@ export default function MessageInput({
           />
           
           <button
-            className="btn btn-circle btn-outline flex-shrink-0"
+            className="btn btn-circle btn-outline flex-shrink-0 btn-sm md:btn-md"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploadingImage}
             title="Upload image"
+            aria-label="Upload image"
           >
             {isUploadingImage ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <span className="text-lg">📷</span>
+              <span className="text-base md:text-lg">📷</span>
             )}
           </button>
           
           <div className="flex-1 relative">
             <textarea
               ref={textAreaRef}
-              className="textarea textarea-bordered w-full resize-none min-h-[40px] max-h-[120px] pr-12"
+              className="textarea textarea-bordered w-full resize-none min-h-[40px] max-h-[120px] pr-10 md:pr-12 text-sm md:text-base"
               placeholder={replyToMessage ? "Reply to message..." : "Type a message..."}
               value={newMessage}
               onChange={(e) => onMessageChange(e.target.value)}
@@ -177,12 +178,13 @@ export default function MessageInput({
             
             {newMessage.trim() && (
               <button 
-                className="absolute right-2 bottom-2 btn btn-primary btn-sm btn-circle"
+                className="absolute right-1.5 md:right-2 bottom-1.5 md:bottom-2 btn btn-primary btn-sm btn-circle"
                 onClick={handleSendClick}
                 disabled={isUploadingImage}
                 title="Send message (Enter)"
+                aria-label="Send message"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
