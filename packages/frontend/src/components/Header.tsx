@@ -114,6 +114,7 @@ export default function Header() {
                         <Image
                           src={user.imageUrl}
                           alt={user.name}
+                          fill
                           className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (

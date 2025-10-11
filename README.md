@@ -63,6 +63,12 @@ npm install -g pnpm
    nano packages/frontend/.env.local
    ```
 
+5. **Build for Frontend**
+   ```bash
+   cd packages/frontend
+   pnpm build
+   ```
+
 ## 🎯 Running the Project
 
 ### Development Mode
@@ -77,13 +83,13 @@ pnpm dev
 **Backend only** (Express API server):
 ```bash
 pnpm start:backend
-# Runs on http://localhost:4000
+# Runs on http://localhost:9001
 ```
 
 **Frontend only** (NextJS app):
 ```bash
 pnpm start:frontend
-# Runs on http://localhost:3000
+# Runs on http://localhost:9000
 ```
 
 ## 📦 Available Scripts
@@ -99,13 +105,13 @@ pnpm start:frontend
 
 Once the backend is running, you can test these endpoints:
 
-- **App Check**: `GET http://localhost:4000`
+- **App Check**: `GET http://localhost:9001`
 
 ### Example API Usage
 
 ```bash
 # App check
-curl http://localhost:4000
+curl http://localhost:9001
 ```
 
 ## 📁 Package Details
@@ -113,12 +119,12 @@ curl http://localhost:4000
 ### Backend (`packages/backend`)
 - **Framework**: Express.js with TypeScript
 - **Development**: Nodemon for hot reload
-- **Port**: 400 (configurable via `.env`)
+- **Port**: 9001 (configurable via `.env`)
 
 ### Frontend (`packages/frontend`)
 - **Framework**: NextJS 14 with App Router
 - **Styling**: Tailwind CSS - Daisy UI with Multi themes
-- **Port**: 3000
+- **Port**: 9000 (configurable via `.env.local`)
 
 <!-- ### Shared Packages
 
@@ -207,7 +213,7 @@ pnpm install
 Create `packages/frontend/.env.local` with:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:4000
+NEXT_PUBLIC_API_URL=http://localhost:9001
 ```
 
 ### Backend Environment Variables
@@ -215,7 +221,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 Create `packages/backend/.env` with:
 
 ```env
-PORT=4000
+PORT=9001
 NODE_ENV=development
 
 # JWT Configuration
@@ -240,6 +246,6 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
 # Application URLs
-CLIENT_URL=http://localhost:3000
-SERVER_URL=http://localhost:4000
+CLIENT_URL=http://localhost:9000
+SERVER_URL=http://localhost:9001
 ```
